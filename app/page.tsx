@@ -590,18 +590,26 @@ export default function Home() {
             </div>
 
             {error ? (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 32px", textAlign: "center", gap: 16 }}>
-                <div style={{ fontSize: 32 }}>⚠️</div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: C.text, marginBottom: 6 }}>Something went wrong</div>
-                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, maxWidth: 220, margin: "0 auto" }}>{error}</div>
+              <div style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div className="fade-up" style={{ background: "#fff", borderRadius: 18, padding: "18px 18px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: `${C.coral}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                      ⚠
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: C.coral }}>
+                      Error
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: "Fraunces, serif", fontSize: 15, lineHeight: 1.6, color: C.text, margin: "0 0 16px" }}>
+                    {error}
+                  </p>
+                  <button
+                    onClick={() => setError(null)}
+                    style={{ padding: "9px 20px", borderRadius: 99, background: C.teal, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+                  >
+                    Try again
+                  </button>
                 </div>
-                <button
-                  onClick={() => { setError(null); setPanelOpen(false); }}
-                  style={{ marginTop: 4, padding: "8px 18px", borderRadius: 99, background: C.teal, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
-                >
-                  Dismiss
-                </button>
               </div>
             ) : analysis ? (
               <div style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 10 }}>

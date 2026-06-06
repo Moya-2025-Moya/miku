@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Miku — Memory Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sage-cream:#fbf6ef;
+    --sage-cream-2:#f3eae0;
+    --sage-ink:#2a2420;
+    --sage-sub:#8a7d6f;
+    --sage-teal:#0f766e;
+    --sage-teal-soft:#15938a;
+    --sage-coral:#e8896b;
+    --sage-sand:#e9d3b8;
+    --sage-line:#e7dccd;
+    --shadow-soft:0 8px 30px rgba(40,30,20,.10);
+    --shadow-lift:0 18px 50px rgba(20,40,38,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    background:var(--sage-cream);
+    color:var(--sage-ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .lib{display:flex;height:100vh;width:100vw}
+
+  /* ===== Sidebar ===== */
+  .lib-side{
+    flex:0 0 280px;
+    background:var(--sage-cream-2);
+    border-right:1px solid var(--sage-line);
+    display:flex;flex-direction:column;
+  }
+  .side-head{
+    padding:18px 18px 14px;
+    border-bottom:1px solid var(--sage-line);
+    display:flex;align-items:center;gap:12px;
+  }
+  .s-orb{
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    background:radial-gradient(circle at 34% 30%, #4fcabd, var(--sage-teal) 60%, #0b5a54);
+    box-shadow:0 4px 12px rgba(15,118,110,.4);
+    display:grid;place-items:center;
+    animation:breathe 4.2s ease-in-out infinite;
+  }
+  .s-orb .face{display:flex;gap:7px;align-items:center}
+  .s-orb .eye{width:4px;height:6px;background:#fff;border-radius:50%;animation:blink 5.5s infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  @keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+  .side-head h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--sage-ink);line-height:1}
+  .side-head p{font-size:11px;color:var(--sage-sub);margin-top:2px}
+
+  .side-search{
+    margin:12px 14px 8px;
+    background:#fff;border:1px solid var(--sage-line);
+    border-radius:20px;padding:8px 14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .side-search svg{opacity:.5;flex-shrink:0}
+  .side-search input{
+    border:none;outline:none;background:none;
+    font-family:inherit;font-size:13px;color:var(--sage-ink);flex:1;min-width:0;
+  }
+  .side-search input::placeholder{color:var(--sage-sub)}
+
+  .contact-list{flex:1;overflow-y:auto;padding:4px 0 10px}
+  .contact-row{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 16px;cursor:pointer;
+    border-bottom:1px solid rgba(231,220,205,.5);
+    transition:.15s;position:relative;
+  }
+  .contact-row:hover{background:rgba(255,255,255,.5)}
+  .contact-row.active{background:rgba(255,255,255,.8);border-right:3px solid var(--sage-teal)}
+  .c-av{
+    width:42px;height:42px;border-radius:50%;flex-shrink:0;
+    display:grid;place-items:center;
+    color:#fff;font-weight:700;font-size:16px;
+  }
+  .c-meta{flex:1;min-width:0}
+  .c-name{font-weight:600;font-size:14px;color:var(--sage-ink)}
+  .c-row2{display:flex;align-items:center;gap:6px;margin-top:3px}
+  .c-type{
+    font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    padding:2px 7px;border-radius:20px;
+    background:rgba(15,118,110,.10);color:var(--sage-teal);
+  }
+  .c-mem{font-size:11px;color:var(--sage-sub)}
+  .c-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--sage-teal);
+    flex-shrink:0;margin-left:auto;
+    box-shadow:0 0 0 2px rgba(15,118,110,.2);
+  }
+
+  .add-btn{
+    margin:10px 14px 14px;
+    border:1.5px dashed var(--sage-line);background:none;
+    border-radius:12px;padding:10px;color:var(--sage-sub);
+    font-family:inherit;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:.15s;
+  }
+  .add-btn:hover{border-color:var(--sage-teal);color:var(--sage-teal);background:rgba(15,118,110,.04)}
+
+  /* ===== Detail panel ===== */
+  .lib-detail{
+    flex:1;display:flex;flex-direction:column;min-width:0;
+    position:relative;background:var(--sage-cream);
+  }
+  .detail-bg{
+    position:absolute;inset:0;pointer-events:none;opacity:.4;
+    background:
+      radial-gradient(circle at 90% 5%, rgba(232,137,107,.18), transparent 40%),
+      radial-gradient(circle at 5% 95%, rgba(21,147,138,.12), transparent 40%);
+  }
+
+  .empty-state{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;color:var(--sage-sub);position:relative;z-index:2;
+  }
+  .empty-state .big-icon{font-size:48px;opacity:.4}
+  .empty-state p{font-size:14px;text-align:center;line-height:1.5;max-width:220px}
+
+  .profile-wrap{
+    flex:1;display:flex;flex-direction:column;min-height:0;
+    position:relative;z-index:2;
+  }
+
+  .p-hdr{
+    padding:22px 28px 16px;
+    border-bottom:1px solid var(--sage-line);
+    display:flex;align-items:center;gap:16px;
+    background:rgba(255,255,255,.5);
+  }
+  .p-av{
+    width:56px;height:56px;border-radius:50%;flex-shrink:0;
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:22px;
+    box-shadow:0 4px 14px rgba(0,0,0,.12);
+  }
+  .p-hdr-info{flex:1}
+  .p-hdr-info h1{
+    font-family:'Fraunces',serif;font-weight:500;font-size:24px;
+    color:var(--sage-ink);line-height:1;
+  }
+  .p-hdr-info .sub{display:flex;align-items:center;gap:8px;margin-top:5px}
+  .type-badge{
+    font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    padding:3px 9px;border-radius:20px;
+    background:rgba(15,118,110,.12);color:var(--sage-teal);
+  }
+  .p-hdr-info .tensions{font-size:12px;color:var(--sage-sub)}
+  .mem-count{text-align:right;font-size:12px;color:var(--sage-sub)}
+  .mem-count strong{
+    display:block;font-family:'Fraunces',serif;font-size:28px;
+    color:var(--sage-teal);font-weight:500;line-height:1;
+  }
+
+  .pattern-strip{
+    padding:12px 28px;
+    border-bottom:1px solid var(--sage-line);
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .pattern-strip .label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--sage-sub);flex-shrink:0;margin-right:4px}
+  .pat-chip{
+    display:flex;align-items:center;gap:5px;
+    background:rgba(255,255,255,.8);border:1px solid var(--sage-line);
+    border-radius:20px;padding:4px 10px 4px 11px;
+    font-size:12px;color:var(--sage-ink);
+  }
+  .pat-chip button{
+    width:16px;height:16px;border-radius:50%;border:none;
+    background:rgba(139,125,111,.15);color:var(--sage-sub);
+    cursor:pointer;font-size:11px;display:grid;place-items:center;
+    transition:.15s;flex-shrink:0;
+  }
+  .pat-chip button:hover{background:rgba(232,137,107,.25);color:#c45c3d}
+  .pat-chip.removed{animation:shrink .3s forwards;overflow:hidden}
+  @keyframes shrink{to{max-width:0;padding:0;opacity:0;border-width:0;margin:0}}
+
+  .tabs{
+    display:flex;gap:0;border-bottom:1px solid var(--sage-line);
+    padding:0 28px;background:rgba(255,255,255,.3);
+  }
+  .tab{
+    padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;
+    color:var(--sage-sub);border-bottom:2.5px solid transparent;
+    transition:.15s;margin-bottom:-1px;
+  }
+  .tab:hover{color:var(--sage-ink)}
+  .tab.active{color:var(--sage-teal);border-bottom-color:var(--sage-teal)}
+
+  .tab-panels{flex:1;overflow-y:auto;padding:20px 28px 0}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  .arc-card{
+    background:rgba(255,255,255,.72);border:1px solid var(--sage-line);
+    border-radius:16px;margin-bottom:14px;overflow:hidden;
+    box-shadow:var(--shadow-soft);
+    animation:rise .4s forwards;
+    transition:opacity .3s, transform .3s;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .arc-card.deleting{opacity:0;transform:translateY(-8px);pointer-events:none}
+  .arc-header{
+    display:flex;align-items:center;gap:12px;
+    padding:13px 16px;cursor:pointer;transition:background .15s;
+  }
+  .arc-header:hover{background:rgba(15,118,110,.03)}
+  .arc-event-info{flex:1;min-width:0}
+  .arc-title{font-weight:600;font-size:13.5px;color:var(--sage-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .arc-opening{font-size:10.5px;color:var(--sage-sub);margin-top:3px;letter-spacing:.3px;text-transform:uppercase}
+  .arc-chevron{flex-shrink:0;color:var(--sage-sub);transition:transform .25s;line-height:1}
+  .arc-card.open .arc-chevron{transform:rotate(180deg)}
+  .arc-del{
+    width:28px;height:28px;border-radius:50%;border:1px solid var(--sage-line);
+    background:none;cursor:pointer;color:var(--sage-sub);font-size:13px;
+    display:grid;place-items:center;transition:.15s;flex-shrink:0;
+  }
+  .arc-del:hover{background:rgba(232,137,107,.12);border-color:#e8896b;color:#c45c3d}
+  .arc-body{display:none;padding:0 16px 16px;border-top:1px solid var(--sage-line)}
+  .arc-card.open .arc-body{display:block}
+  .arc-msgs{
+    background:rgba(251,246,239,.6);border:1px solid var(--sage-line);
+    border-left:3px solid var(--sage-coral);
+    border-radius:10px;padding:10px 13px;margin:14px 0 12px;
+  }
+  .arc-msg{font-size:13px;line-height:1.4;color:#4a4038;padding:2px 0}
+  .arc-msg b{color:var(--sage-ink);font-weight:600}
+  .analysis-grid{display:flex;flex-direction:column;gap:8px}
+  .analysis-section{
+    background:rgba(251,246,239,.55);border:1px solid var(--sage-line);
+    border-radius:10px;padding:10px 12px;
+  }
+  .analysis-label{
+    font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--sage-sub);margin-bottom:5px;display:flex;align-items:center;gap:5px;
+  }
+  .analysis-text{font-size:13px;line-height:1.6;color:#4a4038}
+
+  .pat-section{margin-bottom:22px}
+  .pat-section h3{font-family:'Fraunces',serif;font-size:15px;font-weight:500;color:var(--sage-ink);margin-bottom:10px}
+  .pat-list{display:flex;flex-wrap:wrap;gap:8px}
+  .pat-item{
+    background:rgba(255,255,255,.8);border:1px solid var(--sage-line);
+    border-radius:20px;padding:6px 12px 6px 14px;
+    font-size:13px;color:var(--sage-ink);
+    display:flex;align-items:center;gap:8px;
+    box-shadow:0 2px 6px rgba(40,30,20,.05);
+    transition:opacity .25s, transform .25s;
+  }
+  .pat-item button{
+    width:18px;height:18px;border-radius:50%;border:none;
+    background:rgba(139,125,111,.12);color:var(--sage-sub);
+    cursor:pointer;font-size:12px;display:grid;place-items:center;transition:.15s;
+  }
+  .pat-item button:hover{background:rgba(232,137,107,.2);color:#c45c3d}
+  .tension-chip{
+    background:rgba(232,137,107,.1);border:1px solid rgba(232,137,107,.3);
+    border-radius:20px;padding:5px 12px;font-size:12px;color:#c45c3d;font-weight:600;
+  }
+  /* heat map */
+  .heatmap-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .hm-cell{
+    display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default;
+  }
+  .hm-box{
+    width:38px;height:38px;border-radius:9px;
+    display:grid;place-items:center;
+    font-size:12px;font-weight:700;color:#fff;
+    transition:.2s;position:relative;
+  }
+  .hm-box:hover .hm-tip{display:block}
+  .hm-lbl{font-size:9.5px;color:var(--sage-sub);letter-spacing:.3px;text-transform:uppercase}
+  .hm-tip{
+    display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+    background:var(--sage-ink);color:#fff;padding:4px 8px;border-radius:6px;
+    font-size:11px;white-space:nowrap;pointer-events:none;z-index:10;
+  }
+  .derived-tag{
+    background:rgba(15,118,110,.09);border:1px solid rgba(15,118,110,.2);
+    border-radius:20px;padding:5px 11px;font-size:12px;color:var(--sage-teal);font-weight:600;
+    display:flex;align-items:center;gap:6px;
+  }
+  .derived-tag .dt-count{
+    background:var(--sage-teal);color:#fff;
+    border-radius:20px;padding:1px 6px;font-size:10px;
+  }
+
+  .notes-area{
+    width:100%;min-height:180px;
+    background:rgba(255,255,255,.7);border:1px solid var(--sage-line);
+    border-radius:14px;padding:14px 16px;
+    font-family:inherit;font-size:14px;line-height:1.6;
+    color:var(--sage-ink);resize:vertical;outline:none;
+    box-shadow:var(--shadow-soft);transition:border-color .2s;
+  }
+  .notes-area:focus{border-color:var(--sage-teal)}
+  .notes-hint{font-size:11.5px;color:var(--sage-sub);margin-top:8px;line-height:1.5}
+
+  .lib-foot{
+    padding:14px 28px 18px;
+    border-top:1px solid var(--sage-line);
+    background:rgba(251,246,239,.85);
+    position:relative;z-index:2;
+  }
+  .chat-log{max-height:120px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:7px}
+  .chat-bubble{
+    max-width:78%;padding:9px 13px;border-radius:13px;
+    font-size:13px;line-height:1.5;
+  }
+  .chat-bubble.sage{
+    background:rgba(255,255,255,.85);border:1px solid var(--sage-line);
+    border-top-left-radius:5px;color:#3a322b;align-self:flex-start;
+  }
+  .chat-bubble.me{
+    background:var(--sage-teal);color:#fff;
+    border-top-right-radius:5px;align-self:flex-end;
+  }
+  .typing-dots{display:inline-flex;gap:4px;padding:4px 0}
+  .typing-dots i{width:6px;height:6px;border-radius:50%;background:var(--sage-sub);animation:td 1.2s infinite}
+  .typing-dots i:nth-child(2){animation-delay:.2s}.typing-dots i:nth-child(3){animation-delay:.4s}
+  @keyframes td{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+  .foot-input{
+    display:flex;gap:10px;align-items:center;
+    background:#fff;border:1px solid var(--sage-line);
+    border-radius:24px;padding:6px 6px 6px 16px;
+  }
+  .foot-input input{
+    flex:1;border:none;outline:none;
+    font-family:inherit;font-size:13.5px;color:var(--sage-ink);background:none;
+  }
+  .foot-input input::placeholder{color:var(--sage-sub)}
+  .foot-input button{
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:var(--sage-teal);color:#fff;cursor:pointer;
+    flex-shrink:0;display:grid;place-items:center;transition:.15s;
+  }
+  .foot-input button:hover{background:var(--sage-teal-soft)}
+
+  .key-bar{
+    display:none;align-items:center;gap:8px;
+    margin-bottom:9px;padding:8px 12px;
+    background:#fff;border:1px solid var(--sage-line);border-radius:14px;
+  }
+  .key-bar.open{display:flex}
+  .key-bar label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--sage-sub);white-space:nowrap}
+  .key-bar input{
+    flex:1;border:none;outline:none;font-family:inherit;font-size:12px;
+    color:var(--sage-ink);background:none;min-width:0;
+  }
+  .key-bar input::placeholder{color:var(--sage-sub)}
+  .key-save{
+    border:none;background:var(--sage-teal);color:#fff;
+    border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;
+    cursor:pointer;flex-shrink:0;transition:.15s;
+  }
+  .key-save:hover{background:var(--sage-teal-soft)}
+  .key-status{font-size:10px;color:var(--sage-teal);white-space:nowrap;flex-shrink:0}
+  .key-status.missing{color:var(--sage-coral)}
+  .foot-gear{
+    width:32px;height:32px;border-radius:50%;border:1px solid var(--sage-line);
+    background:none;cursor:pointer;color:var(--sage-sub);font-size:15px;
+    display:grid;place-items:center;flex-shrink:0;transition:.15s;
+  }
+  .foot-gear:hover{border-color:var(--sage-teal);color:var(--sage-teal)}
+  .foot-gear.active{border-color:var(--sage-teal);color:var(--sage-teal);background:rgba(15,118,110,.07)}
+
+  /* self button in sidebar */
+  .self-row{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 16px;cursor:pointer;
+    border-bottom:1px solid var(--sage-line);
+    background:rgba(15,118,110,.05);
+    transition:.15s;
+  }
+  .self-row:hover{background:rgba(15,118,110,.1)}
+  .self-row.active{background:rgba(15,118,110,.12);border-right:3px solid var(--sage-teal)}
+  .self-orb{
+    width:42px;height:42px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#4fcabd,#0f766e);
+    display:grid;place-items:center;font-size:18px;color:#fff;font-weight:700;
+  }
+  .self-meta .c-name{color:var(--sage-teal)}
+  .self-meta .c-sub{font-size:11px;color:var(--sage-sub);margin-top:2px}
+
+  /* self panel */
+  .self-wrap{
+    flex:1;display:flex;flex-direction:column;min-height:0;
+    position:relative;z-index:2;overflow-y:auto;
+  }
+  .self-hdr{
+    padding:22px 28px 16px;border-bottom:1px solid var(--sage-line);
+    background:rgba(255,255,255,.5);display:flex;align-items:center;gap:16px;
+  }
+  .self-hdr-orb{
+    width:56px;height:56px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#4fcabd,#0f766e);
+    display:grid;place-items:center;font-size:24px;color:#fff;font-weight:700;
+    box-shadow:0 4px 14px rgba(15,118,110,.3);
+  }
+  .self-hdr h1{font-family:'Fraunces',serif;font-weight:500;font-size:24px;color:var(--sage-ink);line-height:1}
+  .self-hdr p{font-size:12px;color:var(--sage-sub);margin-top:4px}
+  .self-content{padding:20px 28px;display:flex;flex-direction:column;gap:20px}
+  .self-section{background:rgba(255,255,255,.72);border:1px solid var(--sage-line);border-radius:16px;padding:16px 18px;box-shadow:0 4px 12px rgba(40,30,20,.06)}
+  .self-section h3{font-family:'Fraunces',serif;font-size:15px;font-weight:500;color:var(--sage-ink);margin-bottom:10px}
+  .self-section p{font-size:13px;line-height:1.7;color:#4a4038}
+  .self-gen-btn{
+    border:none;background:var(--sage-teal);color:#fff;
+    border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s;align-self:flex-start;
+  }
+  .self-gen-btn:hover{background:var(--sage-teal-soft)}
+  .self-gen-btn:disabled{opacity:.5;cursor:default}
+
+  /* trigger heat map */
+  .trigger-map{display:flex;flex-direction:column;gap:8px}
+  .trig-row{display:flex;align-items:center;gap:10px}
+  .trig-label{font-size:12px;color:var(--sage-ink);width:160px;flex-shrink:0;line-height:1.3}
+  .trig-bar-wrap{flex:1;background:var(--sage-cream-2);border-radius:20px;height:10px;overflow:hidden}
+  .trig-bar{height:100%;border-radius:20px;transition:width .5s}
+  .trig-count{font-size:11px;color:var(--sage-sub);width:20px;text-align:right;flex-shrink:0}
+
+  /* impression tab */
+  .impression-wrap{display:flex;flex-direction:column;gap:14px}
+  .impression-block{background:rgba(255,255,255,.7);border:1px solid var(--sage-line);border-radius:14px;padding:14px 16px}
+  .impression-block h4{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--sage-sub);margin-bottom:8px}
+  .impression-area{
+    width:100%;background:none;border:none;outline:none;resize:none;
+    font-family:inherit;font-size:13.5px;line-height:1.7;color:var(--sage-ink);
+    min-height:100px;
+  }
+  .impression-area::placeholder{color:var(--sage-sub)}
+
+  /* person profile summary */
+  .person-summary{
+    padding:14px 28px;border-bottom:1px solid var(--sage-line);
+    background:rgba(255,255,255,.35);
+  }
+  .person-summary h4{
+    font-family:'Fraunces',serif;font-size:13px;font-weight:500;
+    color:var(--sage-sub);letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;
+  }
+  .ps-grid{display:flex;gap:10px;flex-wrap:wrap}
+  .ps-card{
+    flex:1;min-width:140px;
+    background:rgba(255,255,255,.7);border:1px solid var(--sage-line);
+    border-radius:12px;padding:10px 12px;
+  }
+  .ps-label{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--sage-sub);margin-bottom:4px}
+  .ps-text{font-size:12.5px;color:var(--sage-ink);line-height:1.5}
+
+  /* flowchart connector */
+  .arc-flow{display:flex;flex-direction:column;gap:0}
+  .arc-flow-step{position:relative}
+  .arc-flow-step + .arc-flow-step::before{
+    content:"";display:block;width:2px;height:10px;
+    background:var(--sage-line);margin:0 auto;
+  }
+
+  /* undo bar */
+  .undo-bar{
+    display:none;align-items:center;gap:8px;
+    margin-bottom:8px;padding:7px 13px;
+    background:rgba(15,118,110,.07);border:1px solid rgba(15,118,110,.18);
+    border-radius:12px;font-size:12px;color:var(--sage-teal);
+  }
+  .undo-bar.visible{display:flex}
+  .undo-btn{
+    border:none;background:var(--sage-teal);color:#fff;
+    border-radius:8px;padding:3px 11px;font-size:11px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s;margin-left:auto;flex-shrink:0;
+  }
+  .undo-btn:hover{background:var(--sage-teal-soft)}
+
+  /* inline editable fields */
+  .editable-inline{
+    display:block;cursor:text;border-radius:5px;
+    padding:1px 4px;margin:-1px -4px;outline:none;transition:background .15s;
+    min-width:10px;
+  }
+  .editable-inline:hover{background:rgba(15,118,110,.07)}
+  .editable-inline:focus{background:rgba(15,118,110,.1);box-shadow:0 0 0 1.5px rgba(15,118,110,.3)}
+  .analysis-text{outline:none;border-radius:6px;transition:background .15s;padding:2px 3px;margin:-2px -3px}
+  .analysis-text:hover{background:rgba(15,118,110,.05)}
+  .analysis-text:focus{background:rgba(15,118,110,.08);box-shadow:0 0 0 1.5px rgba(15,118,110,.22)}
+
+  /* tag row in expanded card */
+  .tag-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px}
+  .ev-tag{
+    display:inline-flex;align-items:center;gap:4px;
+    background:rgba(15,118,110,.09);border:1px solid rgba(15,118,110,.2);
+    border-radius:20px;padding:3px 7px 3px 10px;
+    font-size:11.5px;color:var(--sage-teal);font-weight:600;
+  }
+  .ev-tag button{
+    width:14px;height:14px;border-radius:50%;border:none;
+    background:rgba(15,118,110,.15);color:var(--sage-teal);
+    cursor:pointer;font-size:10px;display:grid;place-items:center;transition:.15s;
+  }
+  .ev-tag button:hover{background:rgba(232,137,107,.3);color:#c45c3d}
+  .add-tag-btn{
+    border:1px dashed rgba(15,118,110,.3);background:none;border-radius:20px;
+    padding:3px 10px;font-size:11.5px;color:var(--sage-sub);cursor:pointer;
+    transition:.15s;font-family:inherit;
+  }
+  .add-tag-btn:hover{border-color:var(--sage-teal);color:var(--sage-teal)}
+
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--sage-line);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="lib">
+
+  <aside class="lib-side">
+    <div class="side-head">
+      <div class="s-orb"><div class="face"><div class="eye"></div><div class="eye"></div></div></div>
+      <div><h2>Memory Library</h2><p>event-based archive</p></div>
+    </div>
+    <div class="side-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8a7d6f" stroke-width="2"/><path d="M20 20l-4-4" stroke="#8a7d6f" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="searchInput" placeholder="Search people&hellip;" oninput="filterContacts(this.value)"/>
+    </div>
+    <div class="self-row" id="selfRow" onclick="loadSelf()">
+      <div class="self-orb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="self-meta">
+        <div class="c-name">Your profile</div>
+        <div class="c-sub">psychological self-read</div>
+      </div>
+    </div>
+    <div class="contact-list" id="contactList"></div>
+    <button class="add-btn" onclick="addPersonPrompt()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add person
+    </button>
+  </aside>
+
+  <div class="lib-detail" id="libDetail">
+    <div class="detail-bg"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">&#129504;</div>
+      <p>Select a person to view their relationship profile and archived moments.</p>
+    </div>
+    <div class="self-wrap" id="selfWrap" style="display:none">
+      <div class="self-hdr">
+        <div class="self-hdr-orb">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div>
+          <h1>Your psychological profile</h1>
+          <p id="selfSubline">Derived from your interactions across all relationships</p>
+        </div>
+      </div>
+      <div class="self-content" id="selfContent"></div>
+    </div>
+    <div class="profile-wrap" id="profileWrap" style="display:none">
+      <div class="p-hdr" id="pHdr"></div>
+      <div class="pattern-strip" id="patternStrip"></div>
+      <div class="person-summary" id="personSummary"></div>
+      <div class="tabs">
+        <div class="tab active" data-tab="archive" onclick="switchTab('archive')">Archive</div>
+        <div class="tab" data-tab="patterns" onclick="switchTab('patterns')">Patterns</div>
+        <div class="tab" data-tab="notes" onclick="switchTab('notes')">Impression</div>
+      </div>
+      <div class="tab-panels">
+        <div class="tab-panel active" id="tab-archive"></div>
+        <div class="tab-panel" id="tab-patterns"></div>
+        <div class="tab-panel" id="tab-notes"></div>
+      </div>
+      <div class="lib-foot">
+        <div class="chat-log" id="chatLog"></div>
+        <div class="undo-bar" id="undoBar">
+          <span id="undoMsg">Last action can be undone</span>
+          <button class="undo-btn" onclick="undoLast()">↩ Undo</button>
+        </div>
+        <div class="key-bar" id="keyBar">
+          <label>API Key</label>
+          <input id="keyInput" type="password" placeholder="sk-ant-api03-…" />
+          <span class="key-status" id="keyStatus"></span>
+          <button class="key-save" onclick="saveApiKey()">Save</button>
+        </div>
+        <div class="foot-input">
+          <input id="libInput" placeholder="Ask Miku to edit this memory…" />
+          <button class="foot-gear" id="gearBtn" onclick="toggleKeyBar()" title="API key settings">⚙</button>
+          <button onclick="sendLibMsg()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 11l18-8-8 18-2-7-8-3z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== HELPERS ===== */
+var MONTH_MAP = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function parseEventDate(s){
+  var p=s.split(" ");
+  if(p.length===3) return new Date(parseInt(p[2]),MONTH_MAP[p[1]],parseInt(p[0]));
+  return null;
+}
+
+/* ===== DATA ===== */
+var PROFILES = {
+  jordan: {
+    id: "jordan",
+    name: "Jordan",
+    type: "friend",
+    initial: "J",
+    color: "linear-gradient(135deg,#f0916b,#e8696b)",
+    patterns: [
+      "soft-exits plans instead of cancelling directly",
+      "uses 'it's fine' when it isn't",
+      "goes quiet after emotional asks",
+      "replies become shorter when withdrawing"
+    ],
+    tensions: ["plans reliability", "emotional directness"],
+    notes: "We met through university mutual friends in 2022. Jordan is generally warm but avoids conflict — tends to disappear rather than address tension directly. I care about this friendship but it makes me second-guess myself.",
+    archive: [
+      {
+        id: "j1", title: "The Night She Didn't Come", date: "15 Mar 2026",
+        tags: ["absence under pressure", "promises", "conflict avoidance"],
+        msgs: [
+          {who:"Jordan", text:"oh my god I'm so so sorry, work ran so late, are you ok??"},
+          {who:"Me",     text:"it's fine, I'm ok now, don't worry"},
+          {who:"Jordan", text:"I feel so terrible. Can I call tomorrow?"},
+          {who:"Me",     text:"sure"}
+        ],
+        analysis: {
+          summary: "You had a health scare that landed you in A&amp;E alone. Jordan had said she'd come. Two hours before, she texted that work had run late. You told her it was fine. She never called the next day.",
+          psychology: "Showing up for someone in crisis requires overriding personal discomfort — for conflict-avoidant people, the discomfort of the hospital, the emotional weight of illness, the vulnerability of being needed all activate the same withdrawal reflex as conflict. Jordan's 'work ran late' may have been true, but it was also the path of least resistance. Her 'Can I call tomorrow?' was likely genuine relief at the exit you gave her.",
+          fault: "Jordan failed here. Not because people don't have hard nights, but because she made a promise and didn't keep it, and because she didn't call the next day. You absorbing it with 'it's fine' meant she didn't have to sit with the weight of that. You protected her from the consequence of letting you down.",
+          profiles: "Jordan: emotionally generous in low-stakes moments, but her avoidance style becomes a liability when the stakes are real. You: habitual self-sufficiency — you said 'it's fine' because asking for more felt like too much to ask. That's worth noticing about yourself too.",
+          forward: "You don't have to relitigate this event. But you now know what Jordan can and can't do. She's not someone to call from the waiting room. Adjust your expectation of her accordingly — not as punishment, but as accuracy.",
+          patterns: "This is the highest-stakes instance of her avoidance pattern. The same mechanism that soft-exits plans leaves you alone in a hospital. Scale matters.",
+          watchout: "If you ever find yourself in crisis again, notice the reflex to protect Jordan from your need. The people who deserve to know you're struggling are the ones who show up — not the ones you have to manage."
+        }
+      },
+      {
+        id: "j2", title: "The 'You're Not Like Other Asian Girls' Compliment", date: "18 Jan 2026",
+        tags: ["microaggression", "othering", "cultural identity"],
+        msgs: [
+          {who:"Jordan", text:"honestly you're just so different from the Asian girls I grew up around, like you're so open and direct"},
+          {who:"Me",     text:"haha yeah"},
+          {who:"Jordan", text:"it's a compliment! you know what I mean"}
+        ],
+        analysis: {
+          summary: "Jordan paid you a compliment by separating you from your ethnic group. She framed it as praise. You laughed it off. The conversation moved on. You've been sitting with it since.",
+          psychology: "This is a textbook 'positive' microaggression — a compliment structured as an exception ('you're not like other [group]'). It operates by affirming you as an individual while implicitly disparaging the group you belong to. Jordan doesn't think of herself as prejudiced, and she isn't — not consciously. But the compliment reveals an unconscious framework in which Asian women are expected to be closed, indirect, passive, and being 'open and direct' is surprising enough to comment on.",
+          fault: "Jordan has a blind spot here, not malice. But impact and intent are different things. The harm of the comment is real even if the intention was warmth. You 'haha yeah'-ing it was a survival reflex — it's exhausting to explain, and you've probably explained versions of this before.",
+          profiles: "Jordan: well-meaning but carrying cultural assumptions she hasn't examined. You: experienced enough with this dynamic to recognise it instantly, tired enough to not always want to address it. The labour of education is yours, and that's unfair.",
+          forward: "You get to decide whether to name it. If you do: 'I know you meant it well, but when you say I'm different from other Asian girls it kind of implies they're all the same — and I'm kind of one of them.' You don't have to. But you don't have to pretend it didn't land either.",
+          patterns: "This is likely not the only time this assumption has surfaced in your friendship. Watch for how Jordan frames other cultural comparisons.",
+          watchout: "If you don't address it, it will probably happen again. Jordan doesn't know she's doing it. Silence reads as agreement."
+        }
+      },
+      {
+        id: "j3", title: "The Boyfriend Disappearance", date: "4 Oct 2025",
+        tags: ["romantic displacement", "de-prioritised", "implicit expectation"],
+        msgs: [
+          {who:"Jordan", text:"I miss you!!"},
+          {who:"Me",     text:"you literally haven't replied to my last three messages"},
+          {who:"Jordan", text:"I know I know I've just been so wrapped up with Tom, you get it right? you know how it is"},
+          {who:"Me",     text:"yeah"},
+          {who:"Jordan", text:"you're the best honestly, let's do dinner soon"}
+        ],
+        analysis: {
+          summary: "Jordan started dating someone new in late summer and effectively vanished — weekly contact became nothing for six weeks. When she surfaced, she framed the reconnect as mutual ('I miss you') and asked you to validate her absence ('you get it right?'). You said yes. Dinner hasn't happened.",
+          psychology: "New romantic attachment genuinely does compress bandwidth — neurobiologically, early-stage love occupies significant cognitive and emotional real estate. But Jordan's 'you get it right?' is doing specific work: it's seeking absolution without having to ask for it. She wanted to confirm you weren't hurt before she had to deal with the possibility that you were.",
+          fault: "Jordan has some responsibility here — six weeks of no response isn't busyness, it's a choice repeated many times. But the more interesting question is why you said 'yeah.' You absorbed it again. You protected her from finding out you were hurt.",
+          profiles: "Jordan: relies on close friends to be unconditionally available without reciprocating that availability. You: conflict-avoidant enough in the opposite direction — you avoid naming hurt to preserve the relationship, which means Jordan never gets accurate feedback about her impact.",
+          forward: "'You get it right?' deserved a real answer. Even something gentle: 'Honestly, I did miss you — six weeks felt like a lot.' That's not drama; that's honesty. Jordan can handle it if you're not explosive about it.",
+          patterns: "She surfaces with warmth when she needs reconnection and disappears when she's occupied elsewhere. The friendship functions on her schedule.",
+          watchout: "'Let's do dinner soon' from Jordan requires a specific date or it won't happen. Don't accept it as a plan — treat it as an intention that needs converting."
+        }
+      }
+    ]
+  },
+
+  mum: {
+    id: "mum",
+    name: "Mum 💛",
+    type: "family",
+    initial: "M",
+    color: "linear-gradient(135deg,#f9cc6b,#f0a83b)",
+    patterns: [
+      "checks in via food questions when actually worried",
+      "expresses concern indirectly — never asks the real question",
+      "goes quiet when overwhelmed, not when uncaring"
+    ],
+    tensions: ["distance anxiety", "unspoken worry"],
+    notes: "She worries but never says so directly. \"Did you eat?\" usually means \"are you okay?\" Once I learned to decode it, the dynamic got a lot warmer.",
+    archive: [
+      {
+        id: "m1", title: "The Chinese New Year Guilt Call", date: "7 Feb 2026",
+        tags: ["filial obligation", "guilt", "sibling comparison", "immigration"],
+        msgs: [
+          {who:"Mum", text:"你今年真的不回来吗 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Are you really not coming back this year?)</span>"},
+          {who:"Me",  text:"妈我真的请不了假，签证也复杂 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Mum I genuinely can't get leave, and the visa situation is complicated)</span>"},
+          {who:"Mum", text:"你奶奶身体不好你知道吗，她很想你 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(You know your grandma's health isn't good — she misses you so much)</span>"},
+          {who:"Me",  text:"我知道，但我没办法 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(I know, but there's nothing I can do)</span>"},
+          {who:"Mum", text:"你哥哥每年都回来的 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Your brother comes back every year)</span>"}
+        ],
+        analysis: {
+          summary: "You explained you couldn't return home for Chinese New Year — visa constraints, leave denied. Mum invoked your grandmother's health, then your brother's annual returns as a contrast. The conversation ended without resolution. You felt guilty for days.",
+          psychology: "This is a collision between two incompatible frameworks: your mother operates within a filial piety model where physical presence during major festivals is a non-negotiable expression of love and respect. You operate within a Western professional and legal reality where 'I can't' is a legitimate answer. Neither framework is wrong, but they're speaking past each other. The grandmother invocation and the brother comparison are both guilt tools — not consciously deployed manipulation, but deeply ingrained patterns for expressing hurt when the expected behaviour doesn't occur.",
+          fault: "There's no clean fault here. Your mum's disappointment is real and culturally coherent within her framework. Your inability to return is also real. The brother comparison is unfair — comparing two people's circumstances as if they're equivalent erases context. That part is worth pushing back on, gently.",
+          profiles: "Mum: expresses love through presence and obligation — absence reads as abandonment in her emotional vocabulary. She grew up in a world where leaving your family meant staying close to them anyway. You: living between two cultural systems, expected to honour both and punished when geography makes that impossible. The immigration reality — visa, leave, cost — is invisible to her in ways that are genuinely hard to explain.",
+          forward: "You can't fix the distance or the holiday. But you can address the framework mismatch directly at some point, not in the heat of the conversation: 'I know it doesn't feel the same, but visa restrictions aren't the same as choosing not to come. I need you to understand that part.' The brother comparison needs naming — 'comparing me to [brother] isn't fair when our situations are different.'",
+          patterns: "This conversation will recur at every major festival. The guilt structure — grandmother's health, sibling contrast — is consistent. Knowing it's coming doesn't make it easier, but it means you can prepare rather than absorb it raw.",
+          watchout: "Don't try to resolve this over text or in the immediate moment after the news. Mum's hurt needs time before she can hear a rational explanation. Give it a few days, then reconnect with warmth rather than justification."
+        }
+      },
+      {
+        id: "m2", title: "The Xiao Li Comparison Call", date: "20 Nov 2025",
+        tags: ["comparison", "career pressure", "indirect communication", "social expectation"],
+        msgs: [
+          {who:"Mum", text:"你同学小李现在在哪工作啊 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Where is your classmate Xiao Li working these days?)</span>"},
+          {who:"Me",  text:"不知道，我们不怎么联系了 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(I don't know, we don't really keep in touch)</span>"},
+          {who:"Mum", text:"她妈跟我说她在银行。很稳定。你有没有考虑过... <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Her mum told me she's at a bank. Very stable. Have you ever considered...)</span>"},
+          {who:"Me",  text:"妈我现在做的挺好的 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Mum, I'm doing really well in what I do)</span>"},
+          {who:"Mum", text:"我就是随便问问 <span style='color:var(--sage-sub);font-style:italic;font-size:11px'>(Just asking, no reason)</span>"}
+        ],
+        analysis: {
+          summary: "Mum opened the conversation asking about a former classmate, then used her career (banking, stable) as a launchpad for an unfinished question about your path. You cut it off. She retreated with '我就是随便问问'. Nothing was resolved; the anxiety behind the question stayed.",
+          psychology: "The Xiao Li manoeuvre is a Chinese parenting classic: expressing concern about your child's choices via a peer who represents the 'safer' path, without having to say directly 'I'm worried about you.' It's face-saving — it doesn't require the parent to openly criticise, which would be uncomfortable — but it communicates the criticism clearly. 'Very stable' is not a neutral description; it's a value statement. The unfinished 'have you considered...' is the real question, which she withdrew when she felt resistance.",
+          fault: "Mum's communication style puts the interpretive burden entirely on you. You're expected to receive an indirect critique, translate it, and respond without naming what's happening — because naming it would be aggressive. That's a lot to carry. The comparison itself is unfair: your classmate's circumstances, skills, interests, and life are different from yours. Using someone else's stability to imply your instability is not accurate.",
+          profiles: "Mum: measures security through legibility — banking, medicine, law, government are careers she can explain at the dinner table to relatives. Creative, tech, or non-traditional careers are harder to defend socially, which makes her anxious. Her worry is genuine; the expression of it is indirect and comparative because that's how she learned to communicate care. You: defensive enough around career topics to shut the conversation down before it opens. That protects you short-term but means she never gets to say what she's actually worried about.",
+          forward: "At some point, ask the actual question for her: 'Are you worried about my job security? We can talk about that.' It defuses the proxy and gives her the real conversation. She probably needs to hear specifics — what you earn, what the trajectory looks like — not because she's materialistic, but because legibility = safety in her framework.",
+          patterns: "Xiao Li will be replaced by someone else next time. The pattern is: peer reference → implicit comparison → unfinished question → retreat when met with resistance. The content changes; the structure doesn't.",
+          watchout: "Don't dismiss these calls as nagging. Underneath the comparison is genuine anxiety about your wellbeing. The anxiety is worth taking seriously even when the method of expressing it is frustrating."
+        }
+      }
+    ]
+  },
+
+  alex: {
+    id: "alex",
+    name: "Alex (design lead)",
+    type: "manager",
+    initial: "A",
+    color: "linear-gradient(135deg,#7ac99b,#3fb37f)",
+    patterns: [
+      "gives feedback as questions (\"have you considered...?\")",
+      "deadline shifts signal scope change, not poor planning",
+      "silence in group chat = thinking, not ignoring",
+      "says \"interesting\" when he disagrees"
+    ],
+    tensions: ["feedback style ambiguity", "deadline communication"],
+    notes: "Alex is fair but very indirect with criticism. Once you know his tells — \"interesting\", the rhetorical question feedback — he's actually quite easy to read. He pushes deadlines when requirements shift; it's a pattern, not randomness.",
+    archive: [
+      {
+        id: "a1", title: "The Credit That Went Elsewhere", date: "9 Apr 2026",
+        tags: ["credit", "visibility", "hierarchy", "workplace dynamics"],
+        msgs: [
+          {who:"Alex", text:"great presentation today team, client loved it"},
+          {who:"Me",   text:"glad it landed — happy to debrief on the research layer if useful"},
+          {who:"Alex", text:"yeah for sure, send over the deck and I'll review"},
+          {who:"Me",   text:"already shared it in the folder"},
+          {who:"Alex", text:"perfect, cheers"}
+        ],
+        analysis: {
+          summary: "You led the research and built the core of the brief that was presented to the client today. Alex presented it. The client praised 'the team.' Alex's follow-up message said 'great work team.' Your name wasn't mentioned in the room or afterwards. Alex asked for your deck after the fact, not before.",
+          psychology: "Credit invisibility is one of the most common and damaging dynamics in hierarchical workplaces. Managers often use 'team' language genuinely — they think of output as collective — without realising that this language is not neutral when contribution is unequal. It's possible Alex thinks he's being egalitarian. It's also possible he's unconsciously claiming the outcome. Both happen, and the effect on you is the same either way.",
+          fault: "Alex has a responsibility here. Even if he didn't intend to erase your contribution, not naming you once — to the client, in his follow-up — is a failure of leadership. The fact that he asked for your deck after the presentation rather than before suggests the relationship between your work and the output was not clearly attributed in his own framing.",
+          profiles: "Alex: likely doesn't experience this as credit-taking because he sees the work as 'the team's.' But he is the face of the team to the client, and that asymmetry has consequences. You: probably sat on this rather than naming it in the moment. That's rational — objecting publicly would be career-risky. But silence accretes.",
+          forward: "This deserves a direct but measured private conversation: 'I wanted to flag something — I felt like my contribution to the brief wasn't very visible in the client presentation. I'm not sure if that was intentional, but I wanted to mention it.' This is not an accusation. It's a professional ask for visibility. His response will tell you a lot about whether this is worth pushing.",
+          patterns: "Watch whether this is a one-off or a pattern. If it happens again, it's structural — he consistently takes credit upward. That changes the calculus of how much you invest.",
+          watchout: "Don't let this sit without flagging it. If you absorb it silently, it will happen again and you'll have a harder time raising it later."
+        }
+      },
+      {
+        id: "a2", title: "The 'Be More Assertive' Feedback", date: "14 Jan 2026",
+        tags: ["cultural coding", "feedback ambiguity", "double standard", "race"],
+        msgs: [
+          {who:"Alex", text:"one bit of feedback from the client call — I think you could push back more, be a bit more confident in the room"},
+          {who:"Me",   text:"yeah, okay, I'll keep that in mind"},
+          {who:"Alex", text:"you've got great ideas, just want to make sure they land"}
+        ],
+        analysis: {
+          summary: "After a client call, Alex told you to be 'more assertive' and 'more confident in the room.' You said okay. You've been turning it over ever since — because you're not sure if it's fair feedback or a culturally coded double standard.",
+          psychology: "This is one of the most documented tensions in cross-cultural workplace dynamics. 'Assertive' and 'confident' in Western professional contexts — particularly client-facing roles — often map onto a very specific communication style: interruptive, declarative, high-volume, low-deference. Research consistently shows that women, and particularly women of colour, are penalised for both conforming to this style (aggression, pushiness) and for not conforming (timid, not a leader). Alex may be giving you honest feedback about what the client expects. He may also be describing a norm you're not obligated to meet on its own terms.",
+          fault: "The feedback is worth interrogating before accepting. Ask yourself: in that call, did you have ideas that didn't get heard, or did you speak and not get credit? Those are different problems. If your ideas didn't get heard, assertiveness coaching might help. If they did get heard but not attributed to you, that's a room dynamics problem — not your confidence.",
+          profiles: "Alex: almost certainly well-intentioned, and may genuinely not be aware of the cultural specificity of 'assertive.' He's trying to help you advance. That makes this feedback both sincere and potentially misleading. You: processing whether to adapt to a norm that may be structurally biased, or to hold your ground. Both are valid choices with real costs.",
+          forward: "Ask Alex a clarifying question before taking the feedback at face value: 'When you say assertive — are there specific moments where I had something to contribute and didn't? I want to make sure I'm working on the right thing.' This reframes it as a skill conversation, not a personality critique, and forces specificity.",
+          patterns: "Track whether this feedback applies to your male colleagues equally. If it doesn't, that's information.",
+          watchout: "Don't internalise this as a character flaw. 'Not assertive enough' can mean three completely different things, only one of which is about you."
+        }
+      }
+    ]
+  },
+
+  liv: {
+    id: "liv",
+    name: "Liv",
+    type: "friend",
+    initial: "L",
+    color: "linear-gradient(135deg,#c79be8,#9b6be2)",
+    patterns: [
+      "escalates via memes before saying what's actually wrong",
+      "goes into planning mode when anxious",
+      "never cancels — overcommits instead"
+    ],
+    tensions: ["communication indirection", "overcommitment"],
+    notes: "Liv is my ride-or-die but communicates in layers. The meme she sends before a conversation is usually the real message.",
+    archive: [
+      {
+        id: "l1", title: "The Loyalty Test No One Named", date: "22 Mar 2026",
+        tags: ["implicit expectation", "loyalty demand", "conflict avoidance", "group dynamics"],
+        msgs: [
+          {who:"Liv",  text:"I just can't believe you're still hanging out with her after everything"},
+          {who:"Me",   text:"I didn't know I had to choose, you never said anything"},
+          {who:"Liv",  text:"I mean... I kind of thought it was obvious"},
+          {who:"Me",   text:"it really wasn't, Liv"},
+          {who:"Liv",  text:"I'm not trying to make this a big thing, I just thought we were on the same page"}
+        ],
+        analysis: {
+          summary: "There was a falling-out in your friend group. Liv stopped speaking to someone. She expected you to do the same — without saying so. You didn't. When you found out she'd been venting to others about you for 'not picking a side,' you confronted her. She said she thought it was obvious.",
+          psychology: "Implicit loyalty demands are one of the most corrosive dynamics in close friendships, particularly in female friendship networks with high interdependence. 'I thought it was obvious' is the tell — it means the expectation existed entirely in Liv's head and was never communicated, but you were expected to have received it anyway. This is a common feature of anxious attachment in friendships: the need for alignment is so strong that it goes unspoken, because naming it would risk finding out the other person doesn't feel it.",
+          fault: "Liv set a test she never told you about and then marked you as failing it. That's not fair — you cannot consent to a rule you don't know exists. The fact that she was venting to others rather than talking to you directly is also a significant problem. She had multiple opportunities to say 'hey, it would mean a lot to me if you didn't stay close with her' and didn't take any of them.",
+          profiles: "Liv: has very high loyalty expectations and experiences deviation from them as betrayal, but is conflict-avoidant enough that she expresses this through indirect channels (venting to others, withdrawal) rather than direct asks. You: operate on the assumption that what hasn't been said hasn't been expected — a reasonable assumption that doesn't protect you here.",
+          forward: "Two things need to happen. First, Liv needs to understand that unstated expectations aren't fair: 'I need you to tell me when you need something from me. I can't guess.' Second, the venting-to-others piece needs to be named: 'If you had a problem with something I did, I'd rather you came to me first.' Both are uncomfortable but necessary.",
+          patterns: "Liv expresses conflict indirectly and expects others to read the signal. This is the same mechanism as the ex situation — she withholds, waits, and then either confronts when it's built up or you find out through other channels.",
+          watchout: "In future group-dynamic situations, check in with Liv early rather than assuming neutrality is safe. A quick 'how are you feeling about everything with X?' gives her the opening to name the expectation before it becomes a test."
+        }
+      },
+      {
+        id: "l2", title: "The Secret She Kept About My Ex", date: "5 Dec 2025",
+        tags: ["withholding", "protection vs honesty", "loyalty conflict", "humiliation"],
+        msgs: [
+          {who:"Me",  text:"why didn't you tell me"},
+          {who:"Liv", text:"I didn't want to hurt you, I was trying to protect you"},
+          {who:"Me",  text:"I found out at the birthday dinner Liv. In front of everyone."},
+          {who:"Liv", text:"I know. I'm so sorry. I thought if I told you it would make things worse"},
+          {who:"Me",  text:"so you just let me walk in there not knowing"},
+          {who:"Liv", text:"I genuinely thought I was doing the right thing"}
+        ],
+        analysis: {
+          summary: "Your ex started dating someone in your shared friend group. Liv knew for approximately two months. She didn't tell you. You found out at a group birthday dinner — in front of everyone, including the new couple. You felt humiliated. Liv says she was protecting you.",
+          psychology: "The protective withholding dilemma is real: Liv was genuinely caught between two bad options — tell you and cause pain, or don't tell you and risk worse pain if you find out publicly. She made a call. The call was wrong, but the intention behind it was not malicious. What's worth examining is whether her choice was actually about protecting you, or whether it was about protecting herself from a very uncomfortable conversation.",
+          fault: "Liv made a unilateral decision about what you could handle, and that decision robbed you of agency. You could have prepared. You could have chosen not to go. You could have had a private moment to process. Instead, you were blindsided in public. That's the harm — not the information itself, but being denied the ability to choose how to receive it. The two months is significant. At some point, protection becomes avoidance.",
+          profiles: "Liv: intensely protective of the people she loves, but that protectiveness sometimes slides into controlling the narrative rather than trusting you with it. She made herself the decision-maker about your emotional life, which — however loving — is not her call. You: needed her to trust you with the information. The public discovery was exactly what her 'protection' created.",
+          forward: "Liv needs to understand the specific harm: 'When you decided for me that I couldn't handle it, you took away my choice. That's what hurt — not that you were trying to protect me, but that you didn't trust me to know what I could handle.' This reframes it as a trust conversation rather than a betrayal conversation, which Liv will be able to hear more clearly.",
+          patterns: "Liv is a buffer — she absorbs and mediates between people she loves. That's a gift and a liability. Watch for future situations where she's sitting on information that affects you. The pattern of protective withholding will likely repeat.",
+          watchout: "You may need to explicitly tell Liv your preference: 'Even if it hurts, I'd rather know things from you than find out some other way.' She needs that stated — she won't assume it."
+        }
+      }
+    ]
+  }
+};
+
+/* mutable working copy */
+var profileData = JSON.parse(JSON.stringify(PROFILES));
+var currentId = null;
+
+/* migrate old 7-key analysis → new 3-key on load */
+(function() {
+  function migrateOne(a) {
+    if (!a || a.happened !== undefined) return a;
+    return {
+      happened: a.summary || "",
+      trigger: [a.psychology, a.fault, a.profiles, a.patterns, a.watchout].filter(Boolean).join("\n\n"),
+      forward: a.forward || ""
+    };
+  }
+  Object.values(profileData).forEach(function(p) {
+    p.archive.forEach(function(item) { item.analysis = migrateOne(item.analysis); });
+  });
+})();
+
+/* ===== SELF DASHBOARD ===== */
+var TRIGGER_CATS = [
+  {label:"Being let down",      color:"#e8896b", tags:["absence under pressure","promises","de-prioritised","romantic displacement"]},
+  {label:"Identity & culture",  color:"#9b6be2", tags:["microaggression","othering","cultural identity","immigration","filial obligation"]},
+  {label:"Loyalty violations",  color:"#e8696b", tags:["withholding","loyalty demand","betrayal","protection vs honesty","humiliation"]},
+  {label:"Comparison",          color:"#f0a83b", tags:["comparison","sibling comparison","career pressure","social expectation"]},
+  {label:"Recognition",         color:"#3fb37f", tags:["credit","visibility","cultural coding","double standard","race"]},
+  {label:"Communication gaps",  color:"#67b8e8", tags:["conflict avoidance","implicit expectation","indirect communication","group dynamics"]}
+];
+
+var selfProfileCache = null;
+
+function loadSelf() {
+  currentId = null;
+  document.getElementById("emptyState").style.display  = "none";
+  document.getElementById("profileWrap").style.display = "none";
+  var sw = document.getElementById("selfWrap");
+  sw.style.display = "flex"; sw.style.flexDirection = "column"; sw.style.flex = "1"; sw.style.minHeight = "0";
+  document.querySelectorAll(".contact-row").forEach(function(r){ r.classList.remove("active"); });
+  document.getElementById("selfRow").classList.add("active");
+
+  /* count events */
+  var totalEvents = 0;
+  var totalPeople = Object.keys(profileData).length;
+  Object.values(profileData).forEach(function(p){ totalEvents += p.archive.length; });
+  document.getElementById("selfSubline").textContent =
+    "Derived from " + totalEvents + " events across " + totalPeople + " relationships";
+
+  renderSelfContent();
+}
+
+function renderSelfContent() {
+  var el = document.getElementById("selfContent");
+
+  /* derive trigger counts */
+  var allTags = [];
+  Object.values(profileData).forEach(function(p){
+    p.archive.forEach(function(item){ (item.tags||[]).forEach(function(t){ allTags.push(t.toLowerCase()); }); });
+  });
+  var maxCount = 0;
+  var counts = TRIGGER_CATS.map(function(cat) {
+    var n = cat.tags.filter(function(t){ return allTags.indexOf(t) !== -1; }).length;
+    /* weighted by actual occurrences */
+    var occ = 0;
+    allTags.forEach(function(t){ if (cat.tags.indexOf(t) !== -1) occ++; });
+    if (occ > maxCount) maxCount = occ;
+    return {cat: cat, count: occ};
+  }).sort(function(a,b){ return b.count - a.count; });
+
+  var triggerHtml = '<div class="trigger-map">' +
+    counts.map(function(row) {
+      var pct = maxCount ? Math.max(8, Math.round((row.count / maxCount) * 100)) : 8;
+      return '<div class="trig-row">' +
+        '<div class="trig-label">' + row.cat.label + '</div>' +
+        '<div class="trig-bar-wrap"><div class="trig-bar" style="width:' + pct + '%;background:' + row.cat.color + '"></div></div>' +
+        '<div class="trig-count">' + (row.count || "–") + '</div>' +
+      '</div>';
+    }).join("") +
+  '</div>';
+
+  function renderSelfSection(text) {
+    if (!text) return '<p style="color:var(--sage-sub);font-style:italic">Analysis not yet generated.</p>';
+    return text.split(/\n+/).filter(Boolean).map(function(line) {
+      var l = line
+        .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--sage-teal)">$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+      return '<p style="margin-bottom:10px">' + l + '</p>';
+    }).join('');
+  }
+
+  var profileHtml = selfProfileCache
+    ? renderSelfSection(selfProfileCache.profile)
+    : '<p style="color:var(--sage-sub);font-style:italic">Click "Generate analysis" to get your psychological profile from Miku — she\'ll read across all your archived events and tell you who she sees.</p>';
+
+  var growthHtml = selfProfileCache
+    ? renderSelfSection(selfProfileCache.growth)
+    : '<p style="color:var(--sage-sub);font-style:italic">Analysis not yet generated.</p>';
+
+  el.innerHTML =
+    '<div class="self-section"><h3>Emotional triggers</h3><p style="font-size:12px;color:var(--sage-sub);margin-bottom:12px">What types of situations show up most in your archived events</p>' + triggerHtml + '</div>' +
+    '<div class="self-section"><h3>Who you are in these relationships</h3>' + profileHtml + '</div>' +
+    '<div class="self-section"><h3>Growth edges</h3>' + growthHtml + '</div>' +
+    '<button class="self-gen-btn" id="selfGenBtn" onclick="generateSelfProfile()">' +
+      (selfProfileCache ? '↺ Regenerate analysis' : '✦ Generate Miku\'s analysis') +
+    '</button>';
+}
+
+async function generateSelfProfile() {
+  var key = getMikuKey();
+  if (!key) { alert("Add your API key (⚙) to generate your self-profile."); return; }
+  var btn = document.getElementById("selfGenBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Analysing…"; }
+
+  var ctx = Object.values(profileData).map(function(p) {
+    return {
+      person: p.name, type: p.type,
+      events: p.archive.map(function(e){
+        return {title: e.title, tags: e.tags||[], analysis: e.analysis};
+      })
+    };
+  });
+
+  var SELF_TOOL = {
+    name: "self_profile",
+    description: "Return the user's psychological self-portrait and growth edges.",
+    input_schema: {
+      type: "object",
+      required: ["profile", "growth"],
+      properties: {
+        profile: {
+          type: "string",
+          description: "2–3 short paragraphs. Write in second person. Bold key observed patterns with **double asterisks**. Be specific and warm — reference actual events. No headers, no bullet points, just flowing prose with bolded insights."
+        },
+        growth: {
+          type: "string",
+          description: "3 actionable growth edges, each as a short paragraph. Bold the core tension or pattern with **double asterisks**. Keep each edge grounded in something you actually observed."
+        }
+      }
+    }
+  };
+
+  var sysPrompt = "You are Miku, a perceptive relationship psychologist. Read across this person's full relationship archive and write a psychological portrait of WHO THEY ARE — not who the other people are.\n\n" +
+    "Focus on: recurring emotional patterns, how they handle conflict and disappointment, where they give too much or too little, what they need but rarely ask for, and where their genuine strength shows up.\n\n" +
+    "Write in second person ('you tend to…', 'what you're really doing is…'). Be honest and warm — not a pep talk, not a diagnosis. Use **double asterisks** around key observed patterns so they render as bold. Keep it concise — 2–3 short paragraphs for the portrait, 3 focused growth edges. No JSON syntax, no code blocks — plain flowing prose only.";
+
+  try {
+    var res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", max_tokens: 1400,
+        system: sysPrompt,
+        tools: [SELF_TOOL],
+        tool_choice: {type: "any"},
+        messages: [{role:"user", content: "Here is my full relationship archive:\n" + JSON.stringify(ctx, null, 2)}]
+      })
+    });
+    var data = await res.json();
+    var toolBlock = data.content && data.content.find(function(c){ return c.type === "tool_use"; });
+    if (toolBlock && toolBlock.input) {
+      selfProfileCache = toolBlock.input;
+    } else {
+      var raw = (data.content && data.content[0] && data.content[0].text) || "";
+      selfProfileCache = {profile: raw, growth: ""};
+    }
+    renderSelfContent();
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = "✦ Generate Miku\'s analysis"; }
+    alert("Error: " + e.message);
+  }
+}
+
+/* ===== SIDEBAR ===== */
+function renderSidebar(filter) {
+  filter = filter || "";
+  var list = document.getElementById("contactList");
+  list.innerHTML = "";
+  Object.values(profileData).forEach(function(p) {
+    if (filter && p.name.toLowerCase().indexOf(filter.toLowerCase()) === -1) return;
+    var row = document.createElement("div");
+    row.className = "contact-row" + (p.id === currentId ? " active" : "");
+    row.setAttribute("data-id", p.id);
+    row.innerHTML =
+      '<div class="c-av" style="background:' + p.color + '">' + p.initial + "</div>" +
+      '<div class="c-meta">' +
+        '<div class="c-name">' + p.name + "</div>" +
+        '<div class="c-row2">' +
+          '<span class="c-type">' + p.type + "</span>" +
+          '<span class="c-mem">' + p.archive.length + " events</span>" +
+        "</div>" +
+      "</div>" +
+      '<div class="c-dot"></div>';
+    row.addEventListener("click", function() { loadProfile(p.id); });
+    list.appendChild(row);
+  });
+}
+
+function filterContacts(v) { renderSidebar(v); }
+
+/* ===== LOAD PROFILE ===== */
+function loadProfile(id) {
+  currentId = id;
+  var p = profileData[id];
+
+  document.getElementById("emptyState").style.display = "none";
+  document.getElementById("selfWrap").style.display = "none";
+  document.getElementById("selfRow").classList.remove("active");
+  var wrap = document.getElementById("profileWrap");
+  wrap.style.display = "flex";
+  wrap.style.flexDirection = "column";
+  wrap.style.flex = "1";
+  wrap.style.minHeight = "0";
+
+  /* header */
+  document.getElementById("pHdr").innerHTML =
+    '<div class="p-av" style="background:' + p.color + '">' + p.initial + "</div>" +
+    '<div class="p-hdr-info">' +
+      "<h1>" + p.name + "</h1>" +
+      '<div class="sub">' +
+        '<span class="type-badge" id="typeBadge">' + p.type + "</span>" +
+        '<span class="tensions">tensions: ' + p.tensions.join(" · ") + "</span>" +
+      "</div>" +
+    "</div>" +
+    '<div class="mem-count"><strong id="memCount">' + p.archive.length + "</strong>events</div>";
+
+  renderPatternStrip(p);
+  renderPersonSummary(p);
+  switchTab("archive");
+  renderArchive(p);
+  renderPatterns(p);
+  renderNotes(p);
+  renderSidebar(document.getElementById("searchInput").value);
+  document.getElementById("chatLog").innerHTML = "";
+}
+
+/* ===== PERSON SUMMARY ===== */
+function renderPersonSummary(p) {
+  var el = document.getElementById("personSummary");
+  if (!el) return;
+  /* derive top tags from events */
+  var tagCounts = {};
+  p.archive.forEach(function(item){
+    (item.tags || []).forEach(function(t){ tagCounts[t] = (tagCounts[t]||0) + 1; });
+  });
+  var topTags = Object.keys(tagCounts).sort(function(a,b){ return tagCounts[b]-tagCounts[a]; }).slice(0,3);
+  var whoText = p.notes
+    ? p.notes.split(".")[0] + "."
+    : p.name.split(" ")[0] + " is a " + p.type + " in your life.";
+  var keyText = p.tensions && p.tensions.length
+    ? "Watch for: " + p.tensions.join(", ") + "."
+    : "No recorded tensions yet.";
+  var themeText = topTags.length
+    ? topTags.join(" · ")
+    : "No themes derived yet — add more events.";
+  el.innerHTML =
+    '<h4>Person profile</h4>' +
+    '<div class="ps-grid">' +
+      '<div class="ps-card"><div class="ps-label">Who they are</div><div class="ps-text">' + whoText + '</div></div>' +
+      '<div class="ps-card"><div class="ps-label">Interaction focus</div><div class="ps-text">' + keyText + '</div></div>' +
+      '<div class="ps-card"><div class="ps-label">Recurring themes</div><div class="ps-text">' + themeText + '</div></div>' +
+    '</div>';
+}
+
+/* ===== PATTERN STRIP ===== */
+function renderPatternStrip(p) {
+  var strip = document.getElementById("patternStrip");
+  strip.innerHTML = '<span class="label">Key patterns</span>';
+  p.patterns.slice(0, 2).forEach(function(pat, i) {
+    var chip = document.createElement("div");
+    chip.className = "pat-chip";
+    chip.id = "strip-pat-" + i;
+    chip.innerHTML = pat + '<button onclick="removePatChip(' + i + ')" title="Remove">&times;</button>';
+    strip.appendChild(chip);
+  });
+}
+
+function removePatChip(i) {
+  var chip = document.getElementById("strip-pat-" + i);
+  if (chip) { chip.classList.add("removed"); setTimeout(function(){chip.remove();}, 350); }
+}
+
+/* ===== ARCHIVE TAB ===== */
+function renderArchive(p) {
+  var el = document.getElementById("tab-archive");
+  el.innerHTML = "";
+  if (p.archive.length === 0) {
+    el.innerHTML = '<p style="color:var(--sage-sub);font-size:14px;padding:20px 0">No events archived yet.</p>';
+    return;
+  }
+  p.archive.forEach(function(item) {
+    el.appendChild(makeArcCard(p.id, item));
+  });
+}
+
+/* ===== UNDO STACK ===== */
+var undoStack = [];
+
+function pushUndo(pid, desc) {
+  var p = profileData[pid];
+  undoStack.push({
+    pid: pid, desc: desc || "Last action",
+    archive: JSON.parse(JSON.stringify(p.archive)),
+    patterns: p.patterns.slice(),
+    notes: p.notes,
+    type: p.type
+  });
+  if (undoStack.length > 20) undoStack.shift();
+  var bar = document.getElementById("undoBar");
+  var msg = document.getElementById("undoMsg");
+  if (bar) bar.classList.add("visible");
+  if (msg) msg.textContent = (desc || "Last action") + " — can be undone";
+}
+
+function undoLast() {
+  if (!undoStack.length) { appendChat("sage", "Nothing left to undo."); return; }
+  var snap = undoStack.pop();
+  var p = profileData[snap.pid];
+  p.archive = snap.archive;
+  p.patterns = snap.patterns;
+  p.notes = snap.notes;
+  p.type = snap.type;
+  if (snap.pid === currentId) {
+    renderArchive(p); renderPatterns(p); renderNotes(p); renderPatternStrip(p);
+    var mc = document.getElementById("memCount");
+    if (mc) mc.textContent = p.archive.length;
+    renderSidebar(document.getElementById("searchInput").value);
+  }
+  if (!undoStack.length) { var bar = document.getElementById("undoBar"); if (bar) bar.classList.remove("visible"); }
+  appendChat("sage", "Undone — <b>" + snap.desc + "</b> reversed.");
+}
+
+/* ===== INLINE EDITING ===== */
+function saveField(pid, itemId, field, key, newVal) {
+  var p = profileData[pid];
+  var item = null;
+  p.archive.forEach(function(a){ if (a.id === itemId) item = a; });
+  if (!item) return;
+  var v = (typeof newVal === "string" ? newVal : "").trim();
+  if (field === "title") {
+    if (item.title === v) return; item.title = v;
+    renderSidebar(document.getElementById("searchInput").value);
+  } else if (field === "date") {
+    if (item.date === v) return; item.date = v; renderPatterns(p);
+  } else if (field === "analysis" && item.analysis) {
+    if (item.analysis[key] === v) return; item.analysis[key] = v;
+  } else if (field === "msg" && item.msgs[key]) {
+    if (item.msgs[key].text === v) return; item.msgs[key].text = v;
+  }
+}
+
+function renderTagRow(rowEl, pid, item) {
+  rowEl.innerHTML = (item.tags || []).map(function(t, ti) {
+    return '<span class="ev-tag">' + t +
+      '<button onclick="removeEvTag(\'' + pid + '\',\'' + item.id + '\',' + ti + ')">&times;</button>' +
+    '</span>';
+  }).join("") +
+  '<button class="add-tag-btn" onclick="addEvTag(\'' + pid + '\',\'' + item.id + '\')">+ tag</button>';
+}
+
+function removeEvTag(pid, itemId, idx) {
+  var p = profileData[pid]; var item = null;
+  p.archive.forEach(function(a){ if (a.id === itemId) item = a; });
+  if (!item || !item.tags) return;
+  pushUndo(pid, "Tag removed");
+  item.tags.splice(idx, 1);
+  var row = document.getElementById("tags-" + itemId);
+  if (row) renderTagRow(row, pid, item);
+  renderPatterns(p);
+}
+
+function addEvTag(pid, itemId) {
+  var tag = prompt("New tag:");
+  if (!tag || !tag.trim()) return;
+  var p = profileData[pid]; var item = null;
+  p.archive.forEach(function(a){ if (a.id === itemId) item = a; });
+  if (!item) return;
+  pushUndo(pid, "Tag added");
+  if (!item.tags) item.tags = [];
+  item.tags.push(tag.trim());
+  var row = document.getElementById("tags-" + itemId);
+  if (row) renderTagRow(row, pid, item);
+  renderPatterns(p);
+}
+
+/* ===== ARC CARD ===== */
+var ARC_SECTIONS = [
+  {icon:"🔍", label:"What happened",         key:"happened",  old:["summary"]},
+  {icon:"⚡", label:"Trigger → behaviour",   key:"trigger",   old:["psychology","fault","profiles","watchout","patterns"]},
+  {icon:"➡️", label:"How to move forward",   key:"forward",   old:["forward"]}
+];
+
+
+function makeArcCard(pid, item) {
+  var card = document.createElement("div");
+  card.className = "arc-card";
+  card.id = "arc-" + item.id;
+
+  /* editable messages */
+  var msgsHtml = (item.msgs && item.msgs.length)
+    ? '<div class="arc-msgs">' + item.msgs.map(function(m, mi) {
+        return '<div class="arc-msg"><b>' + m.who + ':</b> ' +
+          '<span class="editable-inline" contenteditable="true" style="display:inline"' +
+          ' onblur="saveField(\'' + pid + '\',\'' + item.id + '\',\'msg\',' + mi + ',this.innerText)"' +
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}">' +
+          m.text + '</span></div>';
+      }).join("") + '</div>'
+    : '';
+
+  /* editable analysis — 3-step flowchart */
+  var analysisHtml = "";
+  var ana = item.analysis || {};
+  analysisHtml = '<div class="arc-flow">' +
+    ARC_SECTIONS.map(function(s) {
+      var text = ana[s.key] || "";
+      return '<div class="arc-flow-step">' +
+        '<div class="analysis-section">' +
+          '<div class="analysis-label"><span>' + s.icon + '</span>' + s.label + '</div>' +
+          '<div class="analysis-text" contenteditable="true" data-key="' + s.key + '"' +
+          ' onblur="saveField(\'' + pid + '\',\'' + item.id + '\',\'analysis\',\'' + s.key + '\',this.innerText)"' +
+          ' data-placeholder="Click to edit...">' +
+          (text || '<span style="color:var(--sage-sub);font-style:italic;font-size:12px">Click to add…</span>') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join("") +
+  '</div>';
+
+  /* tags */
+  var tagsHtml = '<div class="tag-row" id="tags-' + item.id + '">' +
+    (item.tags || []).map(function(t, ti) {
+      return '<span class="ev-tag">' + t +
+        '<button onclick="removeEvTag(\'' + pid + '\',\'' + item.id + '\',' + ti + ')">&times;</button>' +
+      '</span>';
+    }).join("") +
+    '<button class="add-tag-btn" onclick="addEvTag(\'' + pid + '\',\'' + item.id + '\')">+ tag</button>' +
+  '</div>';
+
+  card.innerHTML =
+    '<div class="arc-header" onclick="toggleArcCard(\'' + item.id + '\')">' +
+      '<div class="arc-event-info">' +
+        '<div class="arc-title editable-inline" contenteditable="true"' +
+          ' onclick="event.stopPropagation()"' +
+          ' onblur="saveField(\'' + pid + '\',\'' + item.id + '\',\'title\',null,this.innerText)"' +
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}">' +
+          (item.title || "Untitled event") + '</div>' +
+        '<div class="arc-opening editable-inline" contenteditable="true"' +
+          ' onclick="event.stopPropagation()"' +
+          ' onblur="saveField(\'' + pid + '\',\'' + item.id + '\',\'date\',null,this.innerText)"' +
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}">' +
+          item.date + '</div>' +
+      '</div>' +
+      '<svg class="arc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '<button class="arc-del" title="Delete event" onclick="event.stopPropagation();deleteMemory(\'' + pid + "','" + item.id + '\')">&#128465;</button>' +
+    '</div>' +
+    '<div class="arc-body">' + msgsHtml + tagsHtml + analysisHtml + '</div>';
+  return card;
+}
+
+function toggleArcCard(id) {
+  var card = document.getElementById("arc-" + id);
+  if (card) card.classList.toggle("open");
+}
+
+function deleteMemory(pid, itemId) {
+  pushUndo(pid, "Event deleted");
+  var card = document.getElementById("arc-" + itemId);
+  if (!card) return;
+  card.classList.add("deleting");
+  setTimeout(function() {
+    card.remove();
+    profileData[pid].archive = profileData[pid].archive.filter(function(a) { return a.id !== itemId; });
+    var mc = document.getElementById("memCount");
+    if (mc) mc.textContent = profileData[pid].archive.length;
+    renderSidebar(document.getElementById("searchInput").value);
+  }, 320);
+}
+
+/* ===== PATTERNS TAB ===== */
+function buildHeatmap(p) {
+  var now = new Date(2026, 5, 6); // fixed "today" for demo
+  var months = [];
+  for (var i = 7; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({year: d.getFullYear(), month: d.getMonth(), count: 0,
+      label: d.toLocaleString("en", {month:"short"}).toUpperCase()});
+  }
+  p.archive.forEach(function(item) {
+    var d = parseEventDate(item.date);
+    if (!d) return;
+    months.forEach(function(m) {
+      if (m.year === d.getFullYear() && m.month === d.getMonth()) m.count++;
+    });
+  });
+  var colors = ["rgba(231,220,205,.6)", "rgba(15,118,110,.28)", "rgba(15,118,110,.58)", "rgba(15,118,110,.88)"];
+  var textColors = ["var(--sage-sub)", "var(--sage-teal)", "#0a6960", "#fff"];
+  return '<div class="heatmap-grid">' + months.map(function(m) {
+    var ci = Math.min(m.count, 3);
+    var tip = m.count === 0 ? "No events" : m.count + " event" + (m.count > 1 ? "s" : "");
+    return '<div class="hm-cell">' +
+      '<div class="hm-box" style="background:' + colors[ci] + ';color:' + textColors[ci] + '">' +
+        (m.count > 0 ? m.count : "") +
+        '<span class="hm-tip">' + m.label + " · " + tip + '</span>' +
+      '</div>' +
+      '<div class="hm-lbl">' + m.label + '</div>' +
+    '</div>';
+  }).join("") + '</div>';
+}
+
+function buildDerivedPatterns(p) {
+  var tagCounts = {};
+  p.archive.forEach(function(item) {
+    (item.tags || []).forEach(function(t) {
+      tagCounts[t] = (tagCounts[t] || 0) + 1;
+    });
+  });
+  var derived = Object.keys(tagCounts).filter(function(t){ return tagCounts[t] >= 1; });
+  derived.sort(function(a,b){ return tagCounts[b] - tagCounts[a]; });
+  if (!derived.length) return "<p style='color:var(--sage-sub);font-size:13px'>No patterns derived yet — add more events.</p>";
+  return '<div class="pat-list">' + derived.map(function(t) {
+    return '<div class="derived-tag">' + t +
+      (tagCounts[t] > 1 ? '<span class="dt-count">' + tagCounts[t] + '</span>' : '') +
+    '</div>';
+  }).join("") + '</div>';
+}
+
+function renderPatterns(p) {
+  var el = document.getElementById("tab-patterns");
+  var pats = p.patterns.map(function(pat, i) {
+    return '<div class="pat-item" id="patitem-' + i + '">' + pat +
+      '<button onclick="removePattern(' + i + ')" title="Remove">&times;</button></div>';
+  }).join("");
+  var tensions = p.tensions.map(function(t) {
+    return '<span class="tension-chip">' + t + "</span>";
+  }).join("");
+  el.innerHTML =
+    '<div class="pat-section"><h3>Communication timeline</h3>' + buildHeatmap(p) + '</div>' +
+    '<div class="pat-section"><h3>Derived from events</h3>' + buildDerivedPatterns(p) + '</div>' +
+    (pats ? '<div class="pat-section"><h3>Manual observations</h3><div class="pat-list" id="patList">' + pats + "</div></div>" : "") +
+    (tensions ? '<div class="pat-section"><h3>Recurring tensions</h3><div class="pat-list">' + tensions + "</div></div>" : "");
+}
+
+function removePattern(i) {
+  var el = document.getElementById("patitem-" + i);
+  if (el) { el.style.opacity = "0"; el.style.transform = "scale(.9)"; el.style.transition = ".25s"; setTimeout(function(){el.remove();}, 270); }
+}
+
+/* ===== NOTES TAB ===== */
+function renderNotes(p) {
+  var el = document.getElementById("tab-notes");
+  var firstName = p.name.split(" ")[0];
+  el.innerHTML =
+    '<div class="impression-wrap">' +
+      '<div class="impression-block">' +
+        '<h4>Who ' + firstName + ' is — in your eyes</h4>' +
+        '<textarea class="impression-area" id="impressionWho" rows="5"' +
+          ' placeholder="Write a character portrait — who is this person to you? Their personality, how they show up in your life, what you appreciate or struggle with...">' +
+          (p.impression_who || p.notes || "") +
+        '</textarea>' +
+      '</div>' +
+      '<div class="impression-block">' +
+        '<h4>Behaviours that affect you</h4>' +
+        '<textarea class="impression-area" id="impressionBehav" rows="4"' +
+          ' placeholder="Which specific behaviours leave you feeling uncomfortable, confused, or hurt? Be honest — this is private.">' +
+          (p.impression_behav || "") +
+        '</textarea>' +
+      '</div>' +
+      '<div class="impression-block">' +
+        '<h4>Subjective feelings & open questions</h4>' +
+        '<textarea class="impression-area" id="impressionFeel" rows="4"' +
+          ' placeholder="What do you feel that you haven\'t fully understood yet? What confuses you about this relationship?">' +
+          (p.impression_feel || "") +
+        '</textarea>' +
+      '</div>' +
+    '</div>';
+
+  function saveImpression() {
+    if (!currentId) return;
+    var pid = currentId;
+    profileData[pid].impression_who   = (document.getElementById("impressionWho")   || {}).value || "";
+    profileData[pid].impression_behav = (document.getElementById("impressionBehav") || {}).value || "";
+    profileData[pid].impression_feel  = (document.getElementById("impressionFeel")  || {}).value || "";
+    profileData[pid].notes = profileData[pid].impression_who;
+  }
+  ["impressionWho","impressionBehav","impressionFeel"].forEach(function(id) {
+    var ta = document.getElementById(id);
+    if (ta) ta.addEventListener("input", saveImpression);
+  });
+}
+
+/* ===== TABS ===== */
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(function(t) {
+    t.classList.toggle("active", t.getAttribute("data-tab") === name);
+  });
+  document.querySelectorAll(".tab-panel").forEach(function(p) {
+    p.classList.toggle("active", p.id === "tab-" + name);
+  });
+}
+
+/* ===== API KEY MANAGEMENT ===== */
+var MIKU_KEY_LS = "miku_api_key";
+
+function getMikuKey() { return localStorage.getItem(MIKU_KEY_LS) || ""; }
+
+function saveApiKey() {
+  var v = document.getElementById("keyInput").value.trim();
+  if (v) {
+    localStorage.setItem(MIKU_KEY_LS, v);
+    updateKeyStatus();
+    document.getElementById("keyBar").classList.remove("open");
+    document.getElementById("gearBtn").classList.remove("active");
+    appendChat("sage", "API key saved. I'm fully connected now — ask me anything about this profile.");
+  }
+}
+
+function updateKeyStatus() {
+  var s = document.getElementById("keyStatus");
+  if (!s) return;
+  if (getMikuKey()) {
+    s.textContent = "✓ connected"; s.className = "key-status";
+  } else {
+    s.textContent = "no key"; s.className = "key-status missing";
+  }
+}
+
+function toggleKeyBar() {
+  var bar = document.getElementById("keyBar");
+  var gear = document.getElementById("gearBtn");
+  var open = bar.classList.toggle("open");
+  gear.classList.toggle("active", open);
+  if (open) {
+    var k = getMikuKey();
+    document.getElementById("keyInput").value = k ? k.slice(0,12) + "…" : "";
+    updateKeyStatus();
+    document.getElementById("keyInput").focus();
+  }
+}
+
+/* ===== MIKU API CALL ===== */
+function buildProfileCtx(p) {
+  return {
+    name: p.name, type: p.type, notes: p.notes,
+    tensions: p.tensions, patterns: p.patterns,
+    events: p.archive.map(function(e) {
+      return {
+        id: e.id,
+        title: e.title || "Untitled",
+        date: e.date,
+        tags: e.tags || [],
+        msgs: (e.msgs || []).map(function(m){ return {who: m.who, text: m.text}; }),
+        analysis: e.analysis || null
+      };
+    })
+  };
+}
+
+var MIKU_TOOL = {
+  name: "miku_action",
+  description: "Respond to the user and optionally modify the relationship profile.",
+  input_schema: {
+    type: "object",
+    required: ["reply", "action"],
+    properties: {
+      reply: { type: "string", description: "Natural language response shown to the user." },
+      action: {
+        type: "string",
+        enum: ["none","deleteEvent","addEvent","addNote","addPattern","changeType","renameEvent","updateAnalysis","batch"]
+      },
+      params: {
+        type: "object",
+        description: "Action parameters. Varies by action:\n" +
+          "deleteEvent: {eventId}\n" +
+          "addEvent: {title, date, tags[]}\n" +
+          "addNote: {text}\n" +
+          "addPattern: {text}\n" +
+          "changeType: {type}\n" +
+          "renameEvent: {eventId, newTitle}\n" +
+          "updateAnalysis: {eventId, field ('happened'|'trigger'|'forward'), newText}\n" +
+          "batch: {actions: [{type, ...params}]} — for multi-field edits like pronoun changes"
+      }
+    }
+  }
+};
+
+async function callMiku(userMsg, p) {
+  var key = getMikuKey();
+  if (!key) {
+    return {reply: "I need an Anthropic API key to use my AI features. Click ⚙ to add it.", action: "none"};
+  }
+
+  var ctx = buildProfileCtx(p);
+  var sysPrompt =
+    "You are Miku, an AI embedded in ScreenRead — a personal relationship memory library.\n" +
+    "You help users understand and manage their relationship dynamics using psychological insight.\n\n" +
+    "Current profile (full content including all analysis text):\n" +
+    JSON.stringify(ctx, null, 2) + "\n\n" +
+    "You MUST call the miku_action tool for every response — no exceptions.\n\n" +
+    "Key capabilities:\n" +
+    "- For 'change pronouns', 'rewrite X', 'update all mentions of Y': use 'batch' with multiple updateAnalysis actions covering every affected field.\n" +
+    "- For 'updateAnalysis': field names are 'happened', 'trigger', 'forward'.\n" +
+    "- For batch pronoun/rewrite tasks: include ALL fields of ALL affected events. Rewrite the complete text for each field — not just the changed words.\n" +
+    "- For analysis/summary questions: use action 'none' and answer in reply.\n" +
+    "- Be warm, psychologically insightful, and concise.";
+
+  try {
+    var res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2048,
+        system: sysPrompt,
+        tools: [MIKU_TOOL],
+        tool_choice: {type: "any"},
+        messages: [{role: "user", content: userMsg}]
+      })
+    });
+
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return {}; });
+      if (res.status === 401) return {reply: "Invalid API key. Click ⚙ to update it.", action: "none"};
+      return {reply: "API error " + res.status + ": " + ((err.error || {}).message || "unknown"), action: "none"};
+    }
+
+    var data = await res.json();
+    /* tool_use block is the guaranteed structured response */
+    var toolBlock = (data.content || []).find(function(c){ return c.type === "tool_use"; });
+    if (toolBlock && toolBlock.input) return toolBlock.input;
+    /* fallback: parse text if tool block missing */
+    var textBlock = (data.content || []).find(function(c){ return c.type === "text"; });
+    var raw = textBlock ? textBlock.text : "";
+    try { var parsed = JSON.parse(raw.trim()); if (parsed.reply) return parsed; } catch(e) {}
+    return {reply: raw || "Something went wrong.", action: "none"};
+
+  } catch(e) {
+    return {reply: "Connection error: " + e.message, action: "none"};
+  }
+}
+
+function applyMikuAction(result, p) {
+  if (!result.action || result.action === "none") return;
+  var params = result.params || {};
+
+  if (result.action === "deleteEvent" && params.eventId) {
+    pushUndo(currentId, "Event deleted by Miku");
+    /* deleteMemory also calls pushUndo — skip double push by deleting directly */
+    var card = document.getElementById("arc-" + params.eventId);
+    if (card) { card.classList.add("deleting"); setTimeout(function(){ card.remove(); }, 320); }
+    p.archive = p.archive.filter(function(a){ return a.id !== params.eventId; });
+    var mc = document.getElementById("memCount");
+    if (mc) mc.textContent = p.archive.length;
+    renderSidebar(document.getElementById("searchInput").value);
+    renderPatterns(p);
+  }
+  else if (result.action === "addEvent") {
+    pushUndo(currentId, "Event added by Miku");
+    var newId = currentId + "_" + Date.now();
+    var newItem = {id: newId, title: params.title || "New event", date: params.date || "Today", tags: params.tags || [], msgs: [], analysis: null};
+    p.archive.unshift(newItem);
+    var panel = document.getElementById("tab-archive");
+    if (panel) panel.insertBefore(makeArcCard(currentId, newItem), panel.firstChild);
+    var mc2 = document.getElementById("memCount");
+    if (mc2) mc2.textContent = p.archive.length;
+    renderSidebar(document.getElementById("searchInput").value);
+    renderPatterns(p);
+    switchTab("archive");
+  }
+  else if (result.action === "addNote" && params.text) {
+    pushUndo(currentId, "Note added by Miku");
+    p.notes = (p.notes ? p.notes + "\n" : "") + params.text;
+    var ta = document.getElementById("notesArea");
+    if (ta) ta.value = p.notes;
+  }
+  else if (result.action === "addPattern" && params.text) {
+    pushUndo(currentId, "Pattern added by Miku");
+    p.patterns.push(params.text);
+    renderPatterns(p);
+    renderPatternStrip(p);
+  }
+  else if (result.action === "changeType" && params.type) {
+    pushUndo(currentId, "Type changed by Miku");
+    p.type = params.type;
+    var badge = document.getElementById("typeBadge");
+    if (badge) badge.textContent = params.type;
+    renderSidebar(document.getElementById("searchInput").value);
+  }
+  else if (result.action === "renameEvent" && params.eventId && params.newTitle) {
+    pushUndo(currentId, "Event renamed by Miku");
+    p.archive.forEach(function(item) {
+      if (item.id === params.eventId) {
+        item.title = params.newTitle;
+        var card = document.getElementById("arc-" + item.id);
+        if (card) { var t = card.querySelector(".arc-title"); if (t) t.textContent = params.newTitle; }
+      }
+    });
+  }
+  else if (result.action === "updateAnalysis" && params.eventId && params.field) {
+    pushUndo(currentId, "Analysis updated by Miku");
+    applyAnalysisUpdate(p, params.eventId, params.field, params.newText || "");
+  }
+  else if (result.action === "batch" && params.actions) {
+    pushUndo(currentId, "Batch edit by Miku");
+    params.actions.forEach(function(act) {
+      if (act.type === "updateAnalysis" && act.eventId && act.field) {
+        applyAnalysisUpdate(p, act.eventId, act.field, act.newText || "");
+      }
+    });
+  }
+}
+
+function applyAnalysisUpdate(p, eventId, field, newText) {
+  var item = null;
+  p.archive.forEach(function(a){ if (a.id === eventId) item = a; });
+  if (!item) return;
+  if (!item.analysis) item.analysis = {};
+  item.analysis[field] = newText;
+  var card = document.getElementById("arc-" + eventId);
+  if (card) {
+    var el = card.querySelector('.analysis-text[data-key="' + field + '"]');
+    if (el) el.innerText = newText;
+  }
+}
+
+/* ===== MIKU CHAT ===== */
+async function sendLibMsg() {
+  var input = document.getElementById("libInput");
+  var v = input.value.trim();
+  if (!v || !currentId) return;
+  input.value = "";
+
+  /* undo shortcut — no API call needed */
+  if (/^undo$/i.test(v)) { appendChat("me", v); undoLast(); return; }
+
+  appendChat("me", v);
+  var log = document.getElementById("chatLog");
+  var typing = document.createElement("div");
+  typing.className = "chat-bubble sage";
+  typing.innerHTML = '<div class="typing-dots"><i></i><i></i><i></i></div>';
+  log.appendChild(typing);
+  log.scrollTop = log.scrollHeight;
+
+  var p = profileData[currentId];
+  var result = await callMiku(v, p);
+  applyMikuAction(result, p);
+  typing.remove();
+  appendChat("sage", result.reply || "…");
+}
+
+function appendChat(who, html) {
+  var log = document.getElementById("chatLog");
+  var b = document.createElement("div");
+  b.className = "chat-bubble " + who;
+  b.innerHTML = html;
+  log.appendChild(b);
+  log.scrollTop = log.scrollHeight;
+}
+
+document.getElementById("libInput").addEventListener("keydown", function(e) { if (e.key === "Enter") sendLibMsg(); });
+
+/* add person */
+function addPersonPrompt() {
+  var name = prompt("Enter the person's name and relationship type\nExample: Sarah, flatmate");
+  if (!name) return;
+  var parts = name.split(",");
+  var pname = parts[0].trim();
+  var ptype = parts[1] ? parts[1].trim() : "contact";
+  var pid = pname.toLowerCase().replace(/\s+/g, "_");
+  var palette = [
+    "linear-gradient(135deg,#c79be8,#9b6be2)",
+    "linear-gradient(135deg,#67b8e8,#4c7ce2)",
+    "linear-gradient(135deg,#e87da3,#e84069)"
+  ];
+  profileData[pid] = {
+    id: pid, name: pname, type: ptype, initial: pname[0].toUpperCase(),
+    color: palette[Object.keys(profileData).length % palette.length],
+    patterns: [], tensions: [], notes: "", archive: []
+  };
+  renderSidebar();
+  loadProfile(pid);
+}
+
+/* boot */
+renderSidebar();
+</script>
+</body>
+</html>

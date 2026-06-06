@@ -86,8 +86,6 @@ button { font-family: inherit; }
   border-left: 1px solid var(--line);
 }
 
-.sr-back, .sr-sheet-handle, .sr-scrim, .sr-mem-btn { display: none; }
-
 /* Conversation rows */
 .sr-convo {
   display: flex; align-items: center; gap: 12px; width: 100%;
@@ -116,6 +114,10 @@ button { font-family: inherit; }
 }
 .sr-iconbtn:hover { background: rgba(0,0,0,0.05); }
 
+/* Mobile-only affordances — hidden on desktop. Declared AFTER .sr-iconbtn so
+   it wins the specificity tie; the mobile media query below re-shows them. */
+.sr-back, .sr-sheet-handle, .sr-scrim, .sr-mem-btn, .sr-sheet-close { display: none; }
+
 /* ─── Mobile — single column, analysis as bottom sheet ────────────────────── */
 
 @media (max-width: 980px) {
@@ -123,7 +125,7 @@ button { font-family: inherit; }
   .sr-app[data-mview="list"] .sr-chat { display: none; }
   .sr-app[data-mview="chat"] .sr-sidebar { display: none; }
   .sr-sidebar, .sr-chat { border: none; }
-  .sr-back, .sr-mem-btn { display: inline-flex; }
+  .sr-back, .sr-mem-btn, .sr-sheet-close { display: inline-flex; }
 
   .sr-scrim {
     display: block; position: fixed; inset: 0;

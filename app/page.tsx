@@ -367,11 +367,7 @@ export default function Home() {
       {/* ── Left: conversation list ──────────────────────────────────────── */}
       <aside className="sr-sidebar">
         <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "center", gap: 10 }}>
-          <MikuBadge size={38} />
-          <div>
-            <div style={{ fontFamily: "Fraunces, serif", fontSize: 19, fontWeight: 600, color: C.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>Miku</div>
-            <div style={{ fontSize: 11, color: C.ink3, marginTop: 3 }}>reads the subtext</div>
-          </div>
+          <div style={{ fontWeight: 600, fontSize: 18, color: C.ink, lineHeight: 1 }}>Chat</div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 8px" }}>

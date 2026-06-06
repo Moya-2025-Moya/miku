@@ -360,30 +360,6 @@ export default function Home() {
           })}
         </div>
 
-<<<<<<< Updated upstream
-        <div style={{ padding: "10px 14px 16px", borderTop: "1px solid rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", gap: 6 }}>
-          <button
-            onClick={() => openConversation({ id: "demo-new", name: "New chat", relationship_type: null, avatar_emoji: "✦" })}
-            style={{
-              width: "100%", padding: "11px 14px", borderRadius: 12,
-              border: `1.5px dashed ${C.teal}55`, background: "transparent",
-              color: C.teal, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif",
-            }}
-          >
-            + New relationship / import a screenshot
-          </button>
-          <a
-            href="/relationship-library.html"
-            style={{
-              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
-              borderRadius: 12, border: `1.5px solid ${C.teal}33`, background: "transparent",
-              color: C.teal, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif",
-              textDecoration: "none", boxSizing: "border-box",
-            }}
-          >
-            <span style={{ fontSize: 16 }}>📚</span> Memory Library
-          </a>
-=======
         <div style={{ padding: "10px 14px 16px", borderTop: `1px solid ${C.line}` }}>
           <button
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 14px", borderRadius: 12, border: `1.5px dashed ${C.teal}55`, background: "transparent", color: C.teal, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
@@ -393,125 +369,11 @@ export default function Home() {
             <Icon name="plus" size={16} /> Add someone · paste / screenshot
           </button>
           {copied === "import" && <div style={{ fontSize: 11, color: C.ink3, textAlign: "center", marginTop: 6 }}>Capture is wired on the backend — UI coming soon.</div>}
->>>>>>> Stashed changes
         </div>
       </aside>
 
       {/* ── Center: chat ─────────────────────────────────────────────────── */}
       <main className="sr-chat">
-<<<<<<< Updated upstream
-        {active ? (
-          <>
-            {/* Chat header */}
-            <div style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid rgba(0,0,0,0.06)", background: "rgba(255,255,255,0.6)", gap: 10, flexShrink: 0 }}>
-              <button className="sr-back" onClick={backToList} title="Back" style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 6px 2px 0", alignItems: "center" }}>
-                <svg width="11" height="18" viewBox="0 0 10 17" fill="none">
-                  <path d="M9 1L1 8.5 9 16" stroke={C.teal} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal} 0%, #14b8a6 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17 }}>
-                  {active.avatar_emoji || activeInitial}
-                </div>
-                <div style={{ position: "absolute", bottom: 1, right: 1, width: 11, height: 11, borderRadius: "50%", background: "#22c55e", border: "2.5px solid #fff" }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15.5, color: C.text, lineHeight: 1.2 }}>{activeName}</div>
-                <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 500, marginTop: 1 }}>Active now</div>
-              </div>
-              <a
-                href={`/relationship-library.html?person=${encodeURIComponent(activeName)}`}
-                title="Open in Memory Library"
-                style={{ width: 34, height: 34, borderRadius: "50%", background: `${C.teal}14`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, textDecoration: "none", flexShrink: 0 }}
-              >
-                📚
-              </a>
-              <div
-                onClick={() => (selected.size > 0 ? analyze() : setPanelOpen((v) => !v))}
-                className={selected.size > 0 ? "pulse" : "breathe"}
-                title={selected.size > 0 ? "Ask Miku" : "Toggle Miku"}
-                style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal} 0%, ${C.coral} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17, flexShrink: 0, color: "#fff", boxShadow: `0 3px 12px ${C.teal}44` }}
-              >
-                ✦
-              </div>
-            </div>
-
-            {/* Thread */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "16px max(18px, calc((100% - 720px) / 2)) 96px", display: "flex", flexDirection: "column" }}>
-              <div style={{ textAlign: "center", margin: "4px 0 14px" }}>
-                <span style={{ fontSize: 11, color: C.muted, background: "rgba(0,0,0,0.04)", padding: "4px 12px", borderRadius: 99 }}>
-                  Tap messages to select, then Ask Miku
-                </span>
-              </div>
-              {DEMO.map((msg, idx) => {
-                const isMe    = msg.sender === "me";
-                const isSel   = selected.has(msg.id);
-                const isFirst = prevSender(idx) !== msg.sender;
-                const isLast  = nextSender(idx) !== msg.sender;
-                return (
-                  <div
-                    key={msg.id}
-                    onClick={() => toggle(msg.id)}
-                    style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", cursor: "pointer", marginTop: isFirst ? 10 : 2, marginBottom: isLast ? 2 : 1 }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, maxWidth: "min(78%, 520px)" }}>
-                      {!isMe && isSel && (
-                        <div className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", flexShrink: 0 }}>✓</div>
-                      )}
-                      <div
-                        style={{
-                          padding: "9px 14px",
-                          borderRadius: isMe ? `18px 18px ${isLast ? 5 : 18}px 18px` : `18px 18px 18px ${isLast ? 5 : 18}px`,
-                          background: isSel ? (isMe ? C.tealDark : "#dcfce7") : (isMe ? C.teal : C.gray),
-                          color: isMe ? "#fff" : C.text,
-                          fontSize: 14.5, lineHeight: 1.45,
-                          transform: isSel ? "scale(0.975)" : "scale(1)",
-                          transition: "all 0.15s ease", userSelect: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-                        }}
-                      >
-                        {msg.body}
-                      </div>
-                      {isMe && isSel && (
-                        <div className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: C.teal, flexShrink: 0 }}>✓</div>
-                      )}
-                    </div>
-                    {isLast && (
-                      <span style={{ fontSize: 10, color: C.muted, marginTop: 3, ...(isMe ? { marginRight: 5 } : { marginLeft: 5 }) } as React.CSSProperties}>
-                        {msg.time}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Floating "Ask Miku" bar */}
-            {selected.size > 0 && (
-              <div
-                className="fade-up"
-                onClick={analyze}
-                style={{ position: "absolute", bottom: 22, left: "50%", transform: "translateX(-50%)", width: "min(92%, 460px)", background: `linear-gradient(135deg, ${C.teal} 0%, #0d9488 100%)`, borderRadius: 22, padding: "13px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: `0 8px 28px ${C.teal}55`, cursor: "pointer", zIndex: 20 }}
-              >
-                <div>
-                  <div style={{ color: "#fff", fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>Ask Miku</div>
-                  <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, marginTop: 2 }}>
-                    {selected.size} message{selected.size !== 1 ? "s" : ""} selected
-                  </div>
-                </div>
-                {loading ? (
-                  <span className="spin" style={{ width: 24, height: 24, border: "2.5px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
-                ) : (
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff" }}>✦</div>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.muted, gap: 10 }}>
-            <div style={{ fontSize: 34 }}>💬</div>
-            <div style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.text }}>Pick a conversation</div>
-            <div style={{ fontSize: 13 }}>Choose someone on the left to start reading.</div>
-=======
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: `1px solid ${C.line}`, background: C.surface, gap: 11, flexShrink: 0 }}>
           <button className="sr-back sr-iconbtn" onClick={() => { setMview("list"); setPanelOpen(false); }} aria-label="Back to people" style={{ width: 30, height: 34, color: C.teal }}>
@@ -519,7 +381,6 @@ export default function Home() {
           </button>
           <div style={{ width: 40, height: 40, borderRadius: "50%", background: avatarBg(active.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17, flexShrink: 0 }}>
             {active.name.charAt(0)}
->>>>>>> Stashed changes
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 15.5, color: C.ink, lineHeight: 1.15 }}>{active.name}</div>

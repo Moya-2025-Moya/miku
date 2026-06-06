@@ -456,9 +456,9 @@ export default function Home() {
                 onClick={() => (selected.size > 0 ? analyze() : setPanelOpen((v) => !v))}
                 className={selected.size > 0 ? "pulse" : "breathe"}
                 title={selected.size > 0 ? "Ask Miku" : "Toggle Miku"}
-                style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal} 0%, ${C.coral} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17, flexShrink: 0, color: "#fff", boxShadow: `0 3px 12px ${C.teal}44` }}
+                style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", cursor: "pointer", flexShrink: 0, boxShadow: `0 3px 12px ${C.teal}44` }}
               >
-                ✦
+                <img src="/miku.svg" alt="Miku" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%" }} />
               </div>
             </div>
 
@@ -545,8 +545,8 @@ export default function Home() {
       <aside className="sr-aside">
         {/* Panel header */}
         <div style={{ display: "flex", alignItems: "center", padding: "18px 20px 14px", borderBottom: "1px solid rgba(15,118,110,0.1)", position: "sticky", top: 0, background: C.cream, zIndex: 5 }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal} 0%, ${C.coral} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, marginRight: 12, boxShadow: `0 4px 14px ${C.teal}44`, flexShrink: 0 }}>
-            ✦
+          <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", marginRight: 12, boxShadow: `0 4px 14px ${C.teal}44`, flexShrink: 0 }}>
+            <img src="/miku.svg" alt="Miku" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%" }} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 18, color: C.text, lineHeight: 1.2 }}>Miku</div>
@@ -667,7 +667,7 @@ export default function Home() {
         ) : (
           /* Empty state */
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 32px", textAlign: "center", gap: 16 }}>
-            <div className="breathe" style={{ width: 68, height: 68, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}1a 0%, ${C.coral}1a 100%)`, border: `1.5px solid ${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: C.teal }}>✦</div>
+            <div className="breathe" style={{ width: 68, height: 68, borderRadius: "50%", overflow: "hidden", background: "#fff", border: `1.5px solid ${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/miku.svg" alt="Miku" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%" }} /></div>
             <div>
               <div style={{ fontFamily: "Fraunces, serif", fontSize: 21, fontWeight: 600, color: C.text, marginBottom: 8 }}>Ready to read</div>
               <div style={{ fontSize: 13.5, lineHeight: 1.7, color: C.muted, maxWidth: 240, margin: "0 auto" }}>

@@ -3,7 +3,7 @@ import { analysisOutputSchema } from "../schemas";
 import { SYSTEM_PROMPT, buildAnalysisUserMessage } from "../prompts";
 import { listArchive } from "./archive";
 import { listPatterns, reinforcePatterns } from "./patterns";
-import { db } from "../db";
+import { getDb } from "../db";
 import type { ProfileRow, AnalysisRow } from "../types";
 
 const MAX_ARCHIVE = 60;
@@ -230,7 +230,7 @@ async function saveAnalysis(
   userReaction: string | undefined,
   output: ReturnType<typeof analysisOutputSchema.parse>
 ): Promise<AnalysisRow> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("analyses")
     .insert({
       profile_id: profileId,
@@ -251,7 +251,7 @@ async function saveAnalysis(
 }
 
 export async function listAnalyses(profileId: string): Promise<AnalysisRow[]> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("analyses")
     .select("*")
     .eq("profile_id", profileId)

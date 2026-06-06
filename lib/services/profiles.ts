@@ -1,10 +1,10 @@
-import { db } from "../db";
+import { getDb } from "../db";
 import { createProfileSchema, updateProfileSchema } from "../schemas";
 import type { ProfileRow } from "../types";
 import type { z } from "zod";
 
 export async function listProfiles(userId: string): Promise<ProfileRow[]> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("profiles")
     .select("*")
     .eq("user_id", userId)
@@ -20,7 +20,7 @@ export async function getProfile(
   id: string,
   userId?: string
 ): Promise<ProfileRow | null> {
-  let q = db.from("profiles").select("*").eq("id", id);
+  let q = getDb().from("profiles").select("*").eq("id", id);
   if (userId) q = q.eq("user_id", userId);
   const { data, error } = await q.single();
   if (error) return null;
@@ -32,7 +32,7 @@ export async function createProfile(
   input: z.infer<typeof createProfileSchema>
 ): Promise<ProfileRow> {
   const validated = createProfileSchema.parse(input);
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("profiles")
     .insert({ ...validated, user_id: userId })
     .select()
@@ -47,7 +47,7 @@ export async function updateProfile(
   userId?: string
 ): Promise<ProfileRow> {
   const validated = updateProfileSchema.parse(input);
-  let q = db.from("profiles").update(validated).eq("id", id);
+  let q = getDb().from("profiles").update(validated).eq("id", id);
   if (userId) q = q.eq("user_id", userId);
   const { data, error } = await q.select().single();
   if (error) throw new Error(error.message);
@@ -55,7 +55,7 @@ export async function updateProfile(
 }
 
 export async function deleteProfile(id: string, userId?: string): Promise<boolean> {
-  let q = db.from("profiles").delete().eq("id", id);
+  let q = getDb().from("profiles").delete().eq("id", id);
   if (userId) q = q.eq("user_id", userId);
   const { error } = await q;
   return !error;
@@ -64,7 +64,7 @@ export async function deleteProfile(id: string, userId?: string): Promise<boolea
 // Confirms a profile belongs to a user — used by sub-resource routes
 // (archive / patterns / analyses / analyze) before they act on `id`.
 export async function profileBelongsTo(id: string, userId: string): Promise<boolean> {
-  const { data } = await db
+  const { data } = await getDb()
     .from("profiles")
     .select("id")
     .eq("id", id)
@@ -77,7 +77,7 @@ export async function findProfileByName(
   userId: string,
   name: string
 ): Promise<ProfileRow | null> {
-  const { data } = await db
+  const { data } = await getDb()
     .from("profiles")
     .select("*")
     .eq("user_id", userId)

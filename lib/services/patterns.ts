@@ -1,8 +1,8 @@
-import { db } from "../db";
+import { getDb } from "../db";
 import type { PatternRow } from "../types";
 
 export async function listPatterns(profileId: string): Promise<PatternRow[]> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("patterns")
     .select("*")
     .eq("profile_id", profileId)
@@ -42,7 +42,7 @@ export async function reinforcePatterns(
             newCount
           )
         );
-        return db
+        return getDb()
           .from("patterns")
           .update({
             evidence_count: newCount,
@@ -52,7 +52,7 @@ export async function reinforcePatterns(
           })
           .eq("id", match.id);
       }
-      return db.from("patterns").insert({
+      return getDb().from("patterns").insert({
         profile_id: profileId,
         label: d.label,
         detail: d.detail ?? null,

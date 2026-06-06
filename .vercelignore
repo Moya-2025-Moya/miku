@@ -1,0 +1,45 @@
+node_modules
+.next
+tsconfig.tsbuildinfo
+
+# Non-project Desktop directories
+ASES London
+CA11 Asset Management
+Data Room
+EdTech
+Entrep
+PB230-master
+Translated Data Room
+VISA
+edu reading
+gmat
+meta
+miku
+moi
+noetic
+pbs
+pphack
+print
+psynotes
+slides
+transcript
+wold
+wx
+复星
+中东Trading Comps
+
+# Loose Desktop files
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.png
+*.zip
+*.doc
+text.txt
+"package 2.json"
+"package-lock 2.json"
+"tsconfig 2.json"
+".env 2.example"
+".gitignore 2"
+~$*

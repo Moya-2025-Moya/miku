@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { getDb } from "../db";
 import type { MessageRow } from "../types";
 
 export interface ArchiveInput {
@@ -17,7 +17,7 @@ export async function archiveMessages(input: ArchiveInput): Promise<MessageRow[]
     annotation: input.annotation ?? null,
     source: input.source ?? "native",
   }));
-  const { data, error } = await db.from("messages").insert(rows).select();
+  const { data, error } = await getDb().from("messages").insert(rows).select();
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -48,6 +48,6 @@ export async function updateMessage(
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
-  const { error } = await db.from("messages").delete().eq("id", id);
+  const { error } = await getDb().from("messages").delete().eq("id", id);
   return !error;
 }

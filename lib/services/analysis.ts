@@ -52,14 +52,14 @@ const ANALYSIS_TOOL = {
 async function callClaude(userMessage: string) {
   const model = process.env.ANALYSIS_MODEL ?? "claude-sonnet-4-6";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // We force the analysis tool to guarantee structured output. The API forbids
+  // enabling thinking together with a forced tool_choice ("Thinking may not be
+  // enabled when tool_choice forces tool use"), so we do NOT set `thinking`
+  // here — reliable structure beats extended reasoning for this call, and this
+  // keeps it working on both Sonnet 4.6 and Opus.
   const params: any = {
     model,
     max_tokens: 16000,
-    // Adaptive thinking + effort works on Sonnet 4.6 AND Opus 4.8.
-    // (The old {type:"enabled", budget_tokens} 400s on Opus 4.7/4.8, which
-    // .env.example invites via "upgrade to claude-opus-4-8".)
-    thinking: { type: "adaptive" },
-    output_config: { effort: process.env.ANALYSIS_EFFORT ?? "high" },
     system: [
       {
         type: "text",
@@ -69,7 +69,7 @@ async function callClaude(userMessage: string) {
     ],
     messages: [{ role: "user", content: userMessage }],
     tools: [ANALYSIS_TOOL],
-    tool_choice: { type: "any" },
+    tool_choice: { type: "tool", name: "analysis_output" },
   };
 
   const response = await anthropic.messages.create(params);

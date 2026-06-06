@@ -1,0 +1,29 @@
+# Next.js
+node_modules/
+.next/
+out/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+.localized
+
+# Personal Desktop files — not part of this project
+*.docx
+*.doc
+*.pdf
+*.xlsx
+*.xls
+*.pptx
+*.ppt
+*.zip
+Screenshot*.png
+~$*
+0716*.docx
+复星/
+中东*/
+周奕*/

@@ -67,6 +67,38 @@ export const analyzeSchema = z.object({
   stream: z.boolean().optional(),
 });
 
+// Relationship-library: one profile's full state, sent on every local mutation.
+export const libraryEventSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().default("Untitled event"),
+  date: z.string().default(""),
+  tags: z.array(z.string()).default([]),
+  msgs: z.array(z.object({ who: z.string(), text: z.string() })).default([]),
+  analysis: z
+    .object({
+      happened: z.string().optional(),
+      trigger: z.string().optional(),
+      forward: z.string().optional(),
+    })
+    .nullable()
+    .default(null),
+});
+
+export const libraryProfileSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  type: z.string().default("contact"),
+  initial: z.string().default("?"),
+  color: z.string().default("linear-gradient(135deg,#c79be8,#9b6be2)"),
+  patterns: z.array(z.string()).default([]),
+  tensions: z.array(z.string()).default([]),
+  notes: z.string().default(""),
+  impression_who: z.string().default(""),
+  impression_behav: z.string().default(""),
+  impression_feel: z.string().default(""),
+  archive: z.array(libraryEventSchema).default([]),
+});
+
 export const importSchema = z
   .object({
     text: z.string().optional(),

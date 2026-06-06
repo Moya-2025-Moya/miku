@@ -62,12 +62,12 @@ const ANALYSIS_JSON_SCHEMA = {
   additionalProperties: false,
 };
 
-async function callClaude(userMessage: string) {
+// Shared request params. Structured outputs (output_config.format) guarantee a
+// schema-valid JSON response and, unlike forced tool_choice, allow adaptive
+// thinking — so we get both reliable structure and reasoning quality. Works on
+// Sonnet 4.6 and Opus. (effort is ignored by models that don't support it.)
+function buildParams(userMessage: string) {
   const model = process.env.ANALYSIS_MODEL ?? "claude-sonnet-4-6";
-  // Structured outputs (output_config.format) guarantee a schema-valid JSON
-  // response and, unlike forced tool_choice, allow adaptive thinking — so we
-  // get both reliable structure and reasoning quality. Works on Sonnet 4.6 and
-  // Opus. (effort is ignored by models that don't support it.)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const params: any = {
     model,
@@ -88,28 +88,47 @@ async function callClaude(userMessage: string) {
     ],
     messages: [{ role: "user", content: userMessage }],
   };
+  return params;
+}
 
-  const response = await getAnthropic().messages.create(params);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const textBlock = response.content.find((b: any) => b.type === "text");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseAnalysisText(content: any[]) {
+  const textBlock = content.find((b: { type: string }) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
     throw new Error("No structured output returned from analysis");
   }
   return analysisOutputSchema.parse(JSON.parse(textBlock.text));
 }
 
-export async function runAnalysis(params: {
+async function callClaude(userMessage: string) {
+  const response = await getAnthropic().messages.create(buildParams(userMessage));
+  return parseAnalysisText(response.content);
+}
+
+// Streaming variant: forwards the JSON text deltas to `onText` as they arrive,
+// then parses the completed message. Used by the SSE analyze path.
+async function streamClaude(userMessage: string, onText: (t: string) => void) {
+  const stream = getAnthropic().messages.stream(buildParams(userMessage));
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      onText(event.delta.text);
+    }
+  }
+  const final = await stream.finalMessage();
+  return parseAnalysisText(final.content);
+}
+
+async function assembleUserMessage(params: {
   profile: ProfileRow;
   messages: { sender: string; body: string }[];
   userReaction?: string;
-}): Promise<AnalysisRow> {
+}): Promise<string> {
   const [archive, patterns, pastAnalyses] = await Promise.all([
     listArchive(params.profile.id, MAX_ARCHIVE),
     listPatterns(params.profile.id),
     listAnalyses(params.profile.id),
   ]);
-
-  const userMessage = buildAnalysisUserMessage({
+  return buildAnalysisUserMessage({
     profile: params.profile,
     patterns,
     archive,
@@ -117,32 +136,37 @@ export async function runAnalysis(params: {
     messages: params.messages,
     userReaction: params.userReaction,
   });
-
-  const parsed = await callClaude(userMessage);
-  const saved = await saveAnalysis(params.profile.id, params.messages, params.userReaction, parsed);
-
-  if (parsed.detected_patterns?.length) {
-    // detected_patterns may arrive as bare strings or rich objects — normalize.
-    const normalized = parsed.detected_patterns.map((p) =>
-      typeof p === "string" ? { label: p } : p
-    );
-    reinforcePatterns(params.profile.id, normalized).catch(() => {});
-  }
-
-  return saved;
 }
 
-export async function runStatelessAnalysis(
+function statelessUserMessage(
   messages: { sender: string; body: string }[],
   userReaction?: string
-): Promise<Omit<AnalysisRow, "id" | "profile_id" | "input_messages" | "created_at">> {
-  const userMessage =
+): string {
+  return (
     "Current exchange:\n" +
     messages.map((m) => `[${m.sender}] ${m.body}`).join("\n") +
-    (userReaction ? `\n\nYour reaction: ${userReaction}` : "");
+    (userReaction ? `\n\nYour reaction: ${userReaction}` : "")
+  );
+}
 
-  const parsed = await callClaude(userMessage);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function reinforceFrom(profileId: string, parsed: any) {
+  if (parsed.detected_patterns?.length) {
+    // detected_patterns may arrive as bare strings or rich objects — normalize.
+    const normalized = parsed.detected_patterns.map((p: unknown) =>
+      typeof p === "string" ? { label: p } : p
+    );
+    reinforcePatterns(profileId, normalized).catch(() => {});
+  }
+}
 
+type StatelessAnalysis = Omit<
+  AnalysisRow,
+  "id" | "profile_id" | "input_messages" | "created_at"
+>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toStateless(userReaction: string | undefined, parsed: any): StatelessAnalysis {
   return {
     user_reaction: userReaction ?? null,
     vibe_read: parsed.vibe_read,
@@ -153,6 +177,51 @@ export async function runStatelessAnalysis(
     referenced_history: parsed.referenced_history ?? null,
     language: parsed.language,
   };
+}
+
+export async function runAnalysis(params: {
+  profile: ProfileRow;
+  messages: { sender: string; body: string }[];
+  userReaction?: string;
+}): Promise<AnalysisRow> {
+  const userMessage = await assembleUserMessage(params);
+  const parsed = await callClaude(userMessage);
+  const saved = await saveAnalysis(params.profile.id, params.messages, params.userReaction, parsed);
+  reinforceFrom(params.profile.id, parsed);
+  return saved;
+}
+
+export async function runStatelessAnalysis(
+  messages: { sender: string; body: string }[],
+  userReaction?: string
+): Promise<StatelessAnalysis> {
+  const parsed = await callClaude(statelessUserMessage(messages, userReaction));
+  return toStateless(userReaction, parsed);
+}
+
+// ── Streaming variants (SSE): forward JSON deltas, then persist/return ────────
+export async function runAnalysisStream(
+  params: {
+    profile: ProfileRow;
+    messages: { sender: string; body: string }[];
+    userReaction?: string;
+  },
+  onText: (t: string) => void
+): Promise<AnalysisRow> {
+  const userMessage = await assembleUserMessage(params);
+  const parsed = await streamClaude(userMessage, onText);
+  const saved = await saveAnalysis(params.profile.id, params.messages, params.userReaction, parsed);
+  reinforceFrom(params.profile.id, parsed);
+  return saved;
+}
+
+export async function runStatelessAnalysisStream(
+  messages: { sender: string; body: string }[],
+  userReaction: string | undefined,
+  onText: (t: string) => void
+): Promise<StatelessAnalysis> {
+  const parsed = await streamClaude(statelessUserMessage(messages, userReaction), onText);
+  return toStateless(userReaction, parsed);
 }
 
 async function saveAnalysis(

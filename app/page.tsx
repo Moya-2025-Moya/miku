@@ -134,6 +134,50 @@ function ConfidenceBar({ level }: { level: string }) {
   );
 }
 
+// ─── Streaming helpers ──────────────────────────────────────────────────────
+
+// Pull a (possibly still-streaming) JSON string field out of a partial buffer.
+// Returns the decoded value, even before its closing quote has arrived, so text
+// fields can "type out" as the analysis streams in.
+function extractJsonString(buf: string, field: string): string | undefined {
+  const at = buf.indexOf(`"${field}"`);
+  if (at === -1) return undefined;
+  let i = at + field.length + 2;
+  while (i < buf.length && buf[i] !== ":") i++;
+  i++;
+  while (i < buf.length && /\s/.test(buf[i]!)) i++;
+  if (buf[i] !== '"') return undefined; // not a string (yet)
+  i++;
+  let out = "";
+  while (i < buf.length) {
+    const c = buf[i]!;
+    if (c === "\\") {
+      const next = buf[i + 1];
+      if (next === undefined) break; // incomplete escape — stop here
+      out += ({ n: "\n", t: "\t", r: "\r" } as Record<string, string>)[next] ?? next;
+      i += 2;
+      continue;
+    }
+    if (c === '"') return out; // closed
+    out += c;
+    i++;
+  }
+  return out; // partial
+}
+
+// Build a partial AnalysisResult from the accumulating JSON. response_options is
+// left empty until the validated final arrives (the panel guards on length).
+function parsePartialAnalysis(buf: string): AnalysisResult {
+  return {
+    vibe_read:        extractJsonString(buf, "vibe_read") ?? "",
+    reality_check:    extractJsonString(buf, "reality_check") ?? "",
+    response_options: [],
+    verdict:          extractJsonString(buf, "verdict") ?? "",
+    confidence:       extractJsonString(buf, "confidence") ?? "low",
+    language:         extractJsonString(buf, "language") ?? "en",
+  };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -215,25 +259,57 @@ export default function Home() {
     if (!msgs.length) return;
     setLoading(true);
     setError(null);
+    setAnalysis(null);
+    setFollowUps([]);
     try {
       // Only archive/learn against a real (Supabase-backed) profile; seeded
       // demo cards fall back to stateless analysis.
       const realId = active && isUuid(active.id) ? active.id : null;
       const body: Record<string, unknown> = {
         messages: msgs.map((m) => ({ sender: m.sender, body: m.body })),
+        stream: true,
         ...(realId ? { profile_id: realId, archive: true } : {}),
       };
-      const res  = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Analysis failed. Please try again.");
-        setAnalysis(null);
+      const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok || !res.body) {
+        let msg = "Analysis failed. Please try again.";
+        try { msg = (await res.json()).error ?? msg; } catch {}
+        setError(msg);
         setPanelOpen(true);
         return;
       }
-      setAnalysis(data);
-      setFollowUps([]);
+
+      // Stream the structured analysis in, revealing fields as they complete.
       setPanelOpen(true);
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";       // SSE frame buffer
+      let json   = "";       // accumulated analysis JSON text
+      let firstText = true;
+      let final: AnalysisResult | null = null;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const event of events) {
+          const line = event.trim();
+          if (!line.startsWith("data:")) continue;
+          const payload = JSON.parse(line.slice(5).trim());
+          if (payload.text) {
+            if (firstText) { setLoading(false); firstText = false; }  // hide spinner; panel fills in
+            json += payload.text;
+            setAnalysis(parsePartialAnalysis(json));
+          } else if (payload.done && payload.analysis) {
+            final = payload.analysis as AnalysisResult;
+          } else if (payload.error) {
+            setError(payload.error);
+            setAnalysis(null);
+          }
+        }
+      }
+      if (final) setAnalysis(final);   // swap partial for validated final (fills response_options etc.)
     } catch {
       setError("Network error. Please check your connection and try again.");
       setAnalysis(null);

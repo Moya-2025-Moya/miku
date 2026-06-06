@@ -63,6 +63,8 @@ export const analyzeSchema = z.object({
     .min(1),
   user_reaction: z.string().optional(),
   archive: z.boolean().default(false),
+  // Opt-in SSE streaming. Backward compatible: omit for the plain JSON response.
+  stream: z.boolean().optional(),
 });
 
 export const importSchema = z

@@ -129,6 +129,7 @@ export default function Home() {
   const [chatLoading, setChatLoading]     = useState(false);
   const [copiedVerdict, setCopiedVerdict] = useState(false);
   const [copiedDraft, setCopiedDraft]     = useState<number | null>(null);
+  const [error, setError]                 = useState<string | null>(null);
   const chatEndRef                        = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -164,6 +165,7 @@ export default function Home() {
     const msgs = DEMO.filter((m) => selected.has(m.id));
     if (!msgs.length) return;
     setLoading(true);
+    setError(null);
     try {
       const body: Record<string, unknown> = {
         messages: msgs.map((m) => ({ sender: m.sender, body: m.body })),
@@ -171,8 +173,18 @@ export default function Home() {
       };
       const res  = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Analysis failed. Please try again.");
+        setAnalysis(null);
+        setPanelOpen(true);
+        return;
+      }
       setAnalysis(data);
       setFollowUps([]);
+      setPanelOpen(true);
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+      setAnalysis(null);
       setPanelOpen(true);
     } finally {
       setLoading(false);
@@ -196,7 +208,13 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      setFollowUps((prev) => [...prev, { role: "assistant", text: data.reply }]);
+      if (!res.ok) {
+        setFollowUps((prev) => [...prev, { role: "assistant", text: data.error ?? "Something went wrong. Please try again." }]);
+        return;
+      }
+      setFollowUps((prev) => [...prev, { role: "assistant", text: data.reply ?? "No response received." }]);
+    } catch {
+      setFollowUps((prev) => [...prev, { role: "assistant", text: "Network error. Please try again." }]);
     } finally {
       setChatLoading(false);
     }
@@ -571,7 +589,21 @@ export default function Home() {
               </button>
             </div>
 
-            {analysis ? (
+            {error ? (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 32px", textAlign: "center", gap: 16 }}>
+                <div style={{ fontSize: 32 }}>⚠️</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: C.text, marginBottom: 6 }}>Something went wrong</div>
+                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, maxWidth: 220, margin: "0 auto" }}>{error}</div>
+                </div>
+                <button
+                  onClick={() => { setError(null); setPanelOpen(false); }}
+                  style={{ marginTop: 4, padding: "8px 18px", borderRadius: 99, background: C.teal, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : analysis ? (
               <div style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 10 }}>
 
                 {/* Vibe read */}

@@ -64,9 +64,15 @@ button { font-family: inherit; }
 .sr-app {
   height: 100vh; height: 100dvh;
   display: grid;
-  grid-template-columns: 296px minmax(0, 1fr) 392px;
+  grid-template-columns: 296px minmax(0, 1fr);
   overflow: hidden;
   background: var(--canvas);
+}
+
+/* When the right panel is opened, expand to a 3-column layout */
+.sr-app[data-panel="open"] {
+  grid-template-columns: 296px minmax(0, 1fr) 392px;
+  transition: grid-template-columns 0.34s cubic-bezier(0.22,1,0.36,1);
 }
 
 .sr-sidebar {
@@ -84,6 +90,11 @@ button { font-family: inherit; }
   display: flex; flex-direction: column; min-height: 0;
   background: var(--surface);
   border-left: 1px solid var(--line);
+}
+
+/* Hide the right panel when the app panel is closed so the chat fills the space */
+.sr-app[data-panel="closed"] .sr-aside {
+  display: none;
 }
 
 /* Conversation rows */
@@ -116,7 +127,10 @@ button { font-family: inherit; }
 
 /* Mobile-only affordances — hidden on desktop. Declared AFTER .sr-iconbtn so
    it wins the specificity tie; the mobile media query below re-shows them. */
-.sr-back, .sr-sheet-handle, .sr-scrim, .sr-mem-btn, .sr-sheet-close { display: none; }
+.sr-back, .sr-sheet-handle, .sr-scrim, .sr-mem-btn { display: none; }
+
+/* Show the close button on desktop so users can hide the Miku panel */
+.sr-sheet-close { display: inline-flex; }
 
 /* ─── Mobile — single column, analysis as bottom sheet ────────────────────── */
 

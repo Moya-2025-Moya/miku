@@ -412,22 +412,24 @@ export default function Home() {
                 key={msg.id}
                 onClick={() => toggle(msg.id)}
                 aria-pressed={isSel}
-                style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", cursor: "pointer", marginTop: isFirst ? 10 : 2, marginBottom: isLast ? 2 : 1, background: "none", border: "none", padding: 0, width: "100%" }}
+                style={{ display: "flex", flexDirection: "column", cursor: "pointer", marginTop: isFirst ? 10 : 2, marginBottom: isLast ? 2 : 1, background: "none", border: "none", padding: 0, width: "100%" }}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: 6, maxWidth: "min(80%, 480px)" }}>
-                  {!isMe && isSel && <span className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}><Icon name="check" size={11} stroke={3} /></span>}
-                  <span style={{
-                    padding: "9px 14px", textAlign: "left",
-                    borderRadius: isMe ? `18px 18px ${isLast ? 5 : 18}px 18px` : `18px 18px 18px ${isLast ? 5 : 18}px`,
-                    background: isSel ? (isMe ? C.tealDk : C.tealSoft) : (isMe ? C.teal : "#fff"),
-                    color: isMe ? "#fff" : C.ink, border: isMe ? "none" : `1px solid ${C.line}`,
-                    fontSize: 14.5, lineHeight: 1.45, userSelect: "none",
-                    boxShadow: isSel ? `0 2px 10px ${C.teal}33` : "0 1px 2px rgba(0,0,0,0.04)",
-                    transition: "background 0.15s, box-shadow 0.15s",
-                  }}>{msg.body}</span>
-                  {isMe && isSel && <span className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: C.tealSoft, display: "flex", alignItems: "center", justifyContent: "center", color: C.teal, flexShrink: 0 }}><Icon name="check" size={11} stroke={3} /></span>}
+                <span style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", width: "100%" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, maxWidth: "min(56%, 420px)", minWidth: 0, justifyContent: isMe ? "flex-end" : "flex-start" }}>
+                    {!isMe && isSel && <span className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}><Icon name="check" size={11} stroke={3} /></span>}
+                    <span style={{
+                      padding: "11px 16px", textAlign: "left",
+                      borderRadius: isMe ? `18px 18px ${isLast ? 5 : 18}px 18px` : `18px 18px 18px ${isLast ? 5 : 18}px`,
+                      background: isSel ? (isMe ? C.tealDk : C.tealSoft) : (isMe ? C.teal : "#fff"),
+                      color: isMe ? "#fff" : C.ink, border: isMe ? "none" : `1px solid ${C.line}`,
+                      fontSize: 14.5, lineHeight: 1.55, userSelect: "none",
+                      boxShadow: isSel ? `0 2px 10px ${C.teal}33` : "0 1px 2px rgba(0,0,0,0.04)",
+                      transition: "background 0.15s, box-shadow 0.15s",
+                    }}>{msg.body}</span>
+                    {isMe && isSel && <span className="check-pop" style={{ width: 18, height: 18, borderRadius: "50%", background: C.tealSoft, display: "flex", alignItems: "center", justifyContent: "center", color: C.teal, flexShrink: 0 }}><Icon name="check" size={11} stroke={3} /></span>}
+                  </span>
                 </span>
-                {isLast && <span style={{ fontSize: 10, color: C.ink3, marginTop: 3, ...(isMe ? { marginRight: 6 } : { marginLeft: 6 }) }}>{msg.time}</span>}
+                {isLast && <span style={{ fontSize: 10, color: C.ink3, marginTop: 3, ...(isMe ? { marginRight: 6, alignSelf: "flex-end" } : { marginLeft: 6, alignSelf: "flex-start" }) }}>{msg.time}</span>}
               </button>
             );
           })}

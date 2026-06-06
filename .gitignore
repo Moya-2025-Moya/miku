@@ -2,6 +2,10 @@
 node_modules/
 .next/
 out/
+tsconfig.tsbuildinfo
+
+# Supabase CLI local cache
+supabase/.temp/
 
 # Env
 .env

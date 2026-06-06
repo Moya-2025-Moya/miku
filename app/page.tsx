@@ -455,10 +455,16 @@ export default function Home() {
                 <span className="spin" style={{ width: 18, height: 18, border: "2.5px solid rgba(0,0,0,0.12)", borderTopColor: C.teal, borderRadius: "50%" }} /> Reading…
               </>
             ) : selected.size > 0 ? (
-              // show Miku image instead of the green rectangle
+              // show Miku image and label when messages are selected
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/miku.png" alt={`Miku — read ${selected.size}`} style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 12, boxShadow: `0 10px 28px ${C.teal}33` }} />
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/miku.png" alt={`Miku — read ${selected.size}`} style={{ width: 78, height: 78, objectFit: "cover", borderRadius: 14, boxShadow: `0 18px 40px ${C.teal}33` }} />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                    <span style={{ fontSize: 17, fontWeight: 700, color: C.teal, lineHeight: 1 }}>Ask Miku</span>
+                    <span style={{ fontSize: 13, color: C.ink3 }}>{selected.size} selected</span>
+                  </div>
+                </div>
               </>
             ) : (
               <>Select messages to get a read</>

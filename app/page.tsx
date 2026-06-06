@@ -417,6 +417,29 @@ export default function Home() {
           })}
         </div>
 
+        <div style={{ padding: "10px 14px 16px", borderTop: "1px solid rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", gap: 6 }}>
+          <button
+            onClick={() => openConversation({ id: "demo-new", name: "New chat", relationship_type: null, avatar_emoji: "✦" })}
+            style={{
+              width: "100%", padding: "11px 14px", borderRadius: 12,
+              border: `1.5px dashed ${C.teal}55`, background: "transparent",
+              color: C.teal, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif",
+            }}
+          >
+            + New relationship / import a screenshot
+          </button>
+          <a
+            href="/relationship-library.html"
+            style={{
+              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
+              borderRadius: 12, border: `1.5px solid ${C.teal}33`, background: "transparent",
+              color: C.teal, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif",
+              textDecoration: "none", boxSizing: "border-box",
+            }}
+          >
+            <span style={{ fontSize: 16 }}>📚</span> Memory Library
+          </a>
+        </div>
       </aside>
 
       {/* ── Center: chat ─────────────────────────────────────────────────── */}
@@ -440,6 +463,13 @@ export default function Home() {
                 <div style={{ fontWeight: 600, fontSize: 15.5, color: C.text, lineHeight: 1.2 }}>{activeName}</div>
                 <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 500, marginTop: 1 }}>Active now</div>
               </div>
+              <a
+                href={`/relationship-library.html?person=${encodeURIComponent(activeName)}`}
+                title="Open in Memory Library"
+                style={{ width: 34, height: 34, borderRadius: "50%", background: `${C.teal}14`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, textDecoration: "none", flexShrink: 0 }}
+              >
+                📚
+              </a>
               <div
                 onClick={() => (selected.size > 0 ? analyze() : setPanelOpen((v) => !v))}
                 className={selected.size > 0 ? "pulse" : "breathe"}

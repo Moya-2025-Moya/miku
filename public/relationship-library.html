@@ -611,7 +611,10 @@
   <aside class="lib-side">
     <div class="side-head">
       <div class="s-orb"><div class="face"><div class="eye"></div><div class="eye"></div></div></div>
-      <div><h2>Memory Library</h2><p>event-based archive</p></div>
+      <div>
+        <a href="/" style="font-size:11px;color:var(--sage-sub);text-decoration:none;display:block;margin-bottom:3px;opacity:.75">← ScreenRead</a>
+        <h2>Memory Library</h2><p>event-based archive</p>
+      </div>
     </div>
     <div class="side-search">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8a7d6f" stroke-width="2"/><path d="M20 20l-4-4" stroke="#8a7d6f" stroke-width="2" stroke-linecap="round"/></svg>
@@ -2047,6 +2050,17 @@ function addPersonPrompt() {
 
 /* boot */
 renderSidebar();
+
+/* deep-link: ?person=Jordan auto-selects that profile */
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var person = params.get("person");
+  if (!person) return;
+  var match = Object.values(profileData).find(function(p) {
+    return p.name.toLowerCase() === person.toLowerCase();
+  });
+  if (match) loadProfile(match.id);
+})();
 </script>
 
 <!-- Archetype modal -->

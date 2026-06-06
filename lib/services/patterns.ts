@@ -11,32 +11,51 @@ export async function listPatterns(profileId: string): Promise<PatternRow[]> {
   return data ?? [];
 }
 
+export interface DetectedPattern {
+  label: string;
+  detail?: string;
+  confidence?: string;
+}
+
+const RANK: Record<string, number> = { low: 1, medium: 2, high: 3 };
+const BY_RANK = ["low", "low", "medium", "high"] as const;
+
 export async function reinforcePatterns(
   profileId: string,
-  detected: string[]
+  detected: DetectedPattern[]
 ): Promise<void> {
   const existing = await listPatterns(profileId);
 
-  for (const label of detected) {
-    const match = existing.find((p) => similar(p.label, label));
+  for (const d of detected) {
+    const match = existing.find((p) => similar(p.label, d.label));
     if (match) {
       const newCount = match.evidence_count + 1;
-      const newConfidence =
-        newCount >= 5 ? "high" : newCount >= 3 ? "medium" : "low";
+      // Confidence grows with corroboration: strongest of prior, the model's
+      // fresh read, and what the evidence count implies (capped at "high").
+      const rank = Math.min(
+        3,
+        Math.max(
+          RANK[match.confidence] ?? 1,
+          RANK[d.confidence ?? "low"] ?? 1,
+          newCount
+        )
+      );
       await db
         .from("patterns")
         .update({
           evidence_count: newCount,
-          confidence: newConfidence,
+          confidence: BY_RANK[rank],
+          detail: d.detail ?? match.detail,
           last_observed: new Date().toISOString(),
         })
         .eq("id", match.id);
     } else {
       await db.from("patterns").insert({
         profile_id: profileId,
-        label,
+        label: d.label,
+        detail: d.detail ?? null,
         evidence_count: 1,
-        confidence: "low",
+        confidence: d.confidence ?? "low",
       });
     }
   }

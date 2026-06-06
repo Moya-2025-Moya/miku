@@ -12,7 +12,15 @@ export const analysisOutputSchema = z.object({
   verdict: z.string(),
   confidence: z.enum(["low", "medium", "high"]),
   referenced_history: z.array(z.string()).optional(),
-  detected_patterns: z.array(z.string()).optional(),
+  detected_patterns: z
+    .array(
+      z.object({
+        label: z.string(),
+        detail: z.string().optional(),
+        confidence: z.enum(["low", "medium", "high"]).optional(),
+      })
+    )
+    .optional(),
   language: z.enum(["en", "zh"]).default("en"),
 });
 

@@ -31,7 +31,18 @@ const ANALYSIS_TOOL = {
       verdict: { type: "string" },
       confidence: { type: "string", enum: ["low", "medium", "high"] },
       referenced_history: { type: "array", items: { type: "string" } },
-      detected_patterns: { type: "array", items: { type: "string" } },
+      detected_patterns: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string", description: "Short pattern name, e.g. 'goes quiet when money comes up'" },
+            detail: { type: "string", description: "One sentence explaining the pattern and its evidence" },
+            confidence: { type: "string", enum: ["low", "medium", "high"] },
+          },
+          required: ["label"],
+        },
+      },
       language: { type: "string", enum: ["en", "zh"] },
     },
     required: ["vibe_read", "reality_check", "response_options", "verdict", "confidence"],
@@ -44,7 +55,11 @@ async function callClaude(userMessage: string) {
   const params: any = {
     model,
     max_tokens: 16000,
-    thinking: { type: "enabled", budget_tokens: 8000 },
+    // Adaptive thinking + effort works on Sonnet 4.6 AND Opus 4.8.
+    // (The old {type:"enabled", budget_tokens} 400s on Opus 4.7/4.8, which
+    // .env.example invites via "upgrade to claude-opus-4-8".)
+    thinking: { type: "adaptive" },
+    output_config: { effort: process.env.ANALYSIS_EFFORT ?? "high" },
     system: [
       {
         type: "text",

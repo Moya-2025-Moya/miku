@@ -9,57 +9,74 @@ import type { ProfileRow, AnalysisRow } from "../types";
 const MAX_ARCHIVE = 60;
 const MAX_PAST_ANALYSES = 5;
 
-const ANALYSIS_TOOL = {
-  name: "analysis_output",
-  description: "Output the structured ScreenRead analysis",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      vibe_read: { type: "string" },
-      reality_check: { type: "string" },
-      response_options: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            tone: { type: "string" },
-            draft: { type: "string" },
-          },
-          required: ["tone", "draft"],
+// JSON Schema for server-side structured outputs. Unlike forced tool_choice,
+// `output_config.format` enforces the shape at the sampler (no string-instead-
+// of-array drift that was 400-ing Chinese inputs) AND is compatible with
+// extended thinking. Strict mode requires every object property in `required`
+// and additionalProperties:false everywhere. Arrays may be empty.
+const ANALYSIS_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    vibe_read: { type: "string" },
+    reality_check: { type: "string" },
+    response_options: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          tone: { type: "string" },
+          draft: { type: "string" },
         },
+        required: ["tone", "draft"],
+        additionalProperties: false,
       },
-      verdict: { type: "string" },
-      confidence: { type: "string", enum: ["low", "medium", "high"] },
-      referenced_history: { type: "array", items: { type: "string" } },
-      detected_patterns: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            label: { type: "string", description: "Short pattern name, e.g. 'goes quiet when money comes up'" },
-            detail: { type: "string", description: "One sentence explaining the pattern and its evidence" },
-            confidence: { type: "string", enum: ["low", "medium", "high"] },
-          },
-          required: ["label"],
-        },
-      },
-      language: { type: "string", enum: ["en", "zh"] },
     },
-    required: ["vibe_read", "reality_check", "response_options", "verdict", "confidence"],
+    verdict: { type: "string" },
+    confidence: { type: "string", enum: ["low", "medium", "high"] },
+    referenced_history: { type: "array", items: { type: "string" } },
+    detected_patterns: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          detail: { type: "string" },
+          confidence: { type: "string", enum: ["low", "medium", "high"] },
+        },
+        required: ["label", "detail", "confidence"],
+        additionalProperties: false,
+      },
+    },
+    language: { type: "string", enum: ["en", "zh"] },
   },
+  required: [
+    "vibe_read",
+    "reality_check",
+    "response_options",
+    "verdict",
+    "confidence",
+    "referenced_history",
+    "detected_patterns",
+    "language",
+  ],
+  additionalProperties: false,
 };
 
 async function callClaude(userMessage: string) {
   const model = process.env.ANALYSIS_MODEL ?? "claude-sonnet-4-6";
+  // Structured outputs (output_config.format) guarantee a schema-valid JSON
+  // response and, unlike forced tool_choice, allow adaptive thinking — so we
+  // get both reliable structure and reasoning quality. Works on Sonnet 4.6 and
+  // Opus. (effort is ignored by models that don't support it.)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // We force the analysis tool to guarantee structured output. The API forbids
-  // enabling thinking together with a forced tool_choice ("Thinking may not be
-  // enabled when tool_choice forces tool use"), so we do NOT set `thinking`
-  // here — reliable structure beats extended reasoning for this call, and this
-  // keeps it working on both Sonnet 4.6 and Opus.
   const params: any = {
     model,
     max_tokens: 16000,
+    thinking: { type: "adaptive" },
+    output_config: {
+      effort: process.env.ANALYSIS_EFFORT ?? "high",
+      format: { type: "json_schema", schema: ANALYSIS_JSON_SCHEMA },
+    },
     system: [
       {
         type: "text",
@@ -68,16 +85,15 @@ async function callClaude(userMessage: string) {
       },
     ],
     messages: [{ role: "user", content: userMessage }],
-    tools: [ANALYSIS_TOOL],
-    tool_choice: { type: "tool", name: "analysis_output" },
   };
 
   const response = await anthropic.messages.create(params);
-  const toolBlock = response.content.find((b) => b.type === "tool_use");
-  if (!toolBlock || toolBlock.type !== "tool_use") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const textBlock = response.content.find((b: any) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
     throw new Error("No structured output returned from analysis");
   }
-  return analysisOutputSchema.parse(toolBlock.input);
+  return analysisOutputSchema.parse(JSON.parse(textBlock.text));
 }
 
 export async function runAnalysis(params: {
@@ -104,7 +120,11 @@ export async function runAnalysis(params: {
   const saved = await saveAnalysis(params.profile.id, params.messages, params.userReaction, parsed);
 
   if (parsed.detected_patterns?.length) {
-    reinforcePatterns(params.profile.id, parsed.detected_patterns).catch(() => {});
+    // detected_patterns may arrive as bare strings or rich objects — normalize.
+    const normalized = parsed.detected_patterns.map((p) =>
+      typeof p === "string" ? { label: p } : p
+    );
+    reinforcePatterns(params.profile.id, normalized).catch(() => {});
   }
 
   return saved;

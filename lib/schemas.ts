@@ -11,16 +11,24 @@ export const analysisOutputSchema = z.object({
   ),
   verdict: z.string(),
   confidence: z.enum(["low", "medium", "high"]),
-  referenced_history: z.array(z.string()).optional(),
+  // These two are non-essential metadata. The model occasionally returns them
+  // in a slightly off shape (e.g. a string instead of an array); .catch keeps a
+  // drift here from 400-ing the entire analysis. detected_patterns accepts both
+  // bare strings and rich objects — normalized downstream before reinforcement.
+  referenced_history: z.array(z.string()).optional().catch(undefined),
   detected_patterns: z
     .array(
-      z.object({
-        label: z.string(),
-        detail: z.string().optional(),
-        confidence: z.enum(["low", "medium", "high"]).optional(),
-      })
+      z.union([
+        z.string(),
+        z.object({
+          label: z.string(),
+          detail: z.string().optional(),
+          confidence: z.enum(["low", "medium", "high"]).optional(),
+        }),
+      ])
     )
-    .optional(),
+    .optional()
+    .catch(undefined),
   language: z.enum(["en", "zh"]).default("en"),
 });
 

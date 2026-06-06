@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
-import { SYSTEM_PROMPT } from "@/lib/prompts";
+import { CHAT_SYSTEM_PROMPT } from "@/lib/prompts";
 
 interface AnalysisContext {
   vibe_read?: string;
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     const systemText = analysis_context
-      ? `${SYSTEM_PROMPT}\n\n---\nPrior analysis context:\nVibe read: ${analysis_context.vibe_read ?? ""}\nReality check: ${analysis_context.reality_check ?? ""}\nVerdict: ${analysis_context.verdict ?? ""} (${analysis_context.confidence ?? ""})`
-      : SYSTEM_PROMPT;
+      ? `${CHAT_SYSTEM_PROMPT}\n\n---\nPrior analysis you gave (for context, don't repeat it back verbatim):\nVibe read: ${analysis_context.vibe_read ?? ""}\nReality check: ${analysis_context.reality_check ?? ""}\nVerdict: ${analysis_context.verdict ?? ""} (${analysis_context.confidence ?? ""})`
+      : CHAT_SYSTEM_PROMPT;
 
     const model = process.env.ANALYSIS_MODEL ?? "claude-sonnet-4-6";
 

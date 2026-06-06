@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ScreenRead",
-  description: "AI-powered conversation analysis",
+  title: "Miku",
+  description: "Miku reads the subtext in your conversations.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

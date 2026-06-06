@@ -330,8 +330,8 @@ export default function Home() {
         <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "center", gap: 10 }}>
           <MikuBadge size={38} />
           <div>
-            <div style={{ fontFamily: "Fraunces, serif", fontSize: 19, fontWeight: 600, color: C.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>ScreenRead</div>
-            <div style={{ fontSize: 11, color: C.ink3, marginTop: 3 }}>Miku reads the subtext</div>
+            <div style={{ fontFamily: "Fraunces, serif", fontSize: 19, fontWeight: 600, color: C.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>Miku</div>
+            <div style={{ fontSize: 11, color: C.ink3, marginTop: 3 }}>reads the subtext</div>
           </div>
         </div>
 
@@ -743,7 +743,7 @@ function ShareCard({ analysis, who, onClose, copied, flash }: { analysis: Analys
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
             <MikuBadge size={30} />
-            <span style={{ fontFamily: "Fraunces, serif", fontSize: 15, fontWeight: 600, color: "#fff" }}>ScreenRead</span>
+            <span style={{ fontFamily: "Fraunces, serif", fontSize: 15, fontWeight: 600, color: "#fff" }}>Miku</span>
           </div>
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>Miku’s verdict</div>
           <p style={{ fontFamily: "Fraunces, serif", fontSize: 25, fontWeight: 600, lineHeight: 1.3, color: "#fff", margin: "0 0 22px" }}>“{analysis.verdict}”</p>
@@ -757,7 +757,7 @@ function ShareCard({ analysis, who, onClose, copied, flash }: { analysis: Analys
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => flash("share-copy", `“${analysis.verdict}” — Miku on ${who} · ScreenRead`)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px", borderRadius: 14, border: "none", background: "#fff", color: C.ink, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => flash("share-copy", `“${analysis.verdict}” — Miku on ${who}`)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px", borderRadius: 14, border: "none", background: "#fff", color: C.ink, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
             {copied === "share-copy" ? <><Icon name="check" size={16} stroke={3} /> Copied</> : <><Icon name="copy" size={16} /> Copy verdict</>}
           </button>
           <button onClick={onClose} aria-label="Close" style={{ width: 50, borderRadius: 14, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>

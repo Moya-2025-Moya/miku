@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const { message, profile } = schema.parse(await req.json());
     const system =
-      "You are Miku, an AI embedded in ScreenRead — a personal relationship memory library.\n" +
+      "You are Miku — a personal relationship memory library.\n" +
       "You help users understand and manage their relationship dynamics using psychological insight.\n\n" +
       "Current profile (full content including all analysis text):\n" +
       JSON.stringify(profile, null, 2) +

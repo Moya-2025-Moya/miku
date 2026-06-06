@@ -438,20 +438,31 @@ export default function Home() {
           <button
             onClick={analyze}
             disabled={selected.size === 0 || loading}
+            aria-label={selected.size > 0 ? `Ask Miku to read ${selected.size} messages` : "Select messages to get a read"}
             style={{
               width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-              padding: "14px 18px", borderRadius: 16,
-              background: selected.size > 0 ? `linear-gradient(135deg, ${C.teal} 0%, ${C.tealDk} 100%)` : "#fff",
+              padding: selected.size > 0 ? "10px" : "14px 18px", borderRadius: 16,
+              background: selected.size > 0 ? "transparent" : "#fff",
               color: selected.size > 0 ? "#fff" : C.ink3,
-              boxShadow: selected.size > 0 ? `0 10px 30px ${C.teal}44` : "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: selected.size > 0 ? "none" : "0 2px 10px rgba(0,0,0,0.06)",
               border: selected.size > 0 ? "none" : `1px solid ${C.line}`,
               cursor: selected.size > 0 && !loading ? "pointer" : "default",
               fontSize: 15, fontWeight: 600, transition: "all 0.18s ease",
             }}
           >
-            {loading ? <><span className="spin" style={{ width: 18, height: 18, border: "2.5px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%" }} /> Reading…</>
-              : selected.size > 0 ? <><Icon name="spark" size={18} fill /> Ask Miku to read {selected.size}</>
-              : <>Select messages to get a read</>}
+            {loading ? (
+              <>
+                <span className="spin" style={{ width: 18, height: 18, border: "2.5px solid rgba(0,0,0,0.12)", borderTopColor: C.teal, borderRadius: "50%" }} /> Reading…
+              </>
+            ) : selected.size > 0 ? (
+              // show Miku image instead of the green rectangle
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/miku.png" alt={`Miku — read ${selected.size}`} style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 12, boxShadow: `0 10px 28px ${C.teal}33` }} />
+              </>
+            ) : (
+              <>Select messages to get a read</>
+            )}
           </button>
         </div>
       </main>

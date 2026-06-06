@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { SEED_PROFILES } from "@/lib/seed-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -842,6 +842,35 @@ function ReadView(props: {
   chatInput: string; setChatInput: (v: string) => void; sendFollowUp: () => void;
 }) {
   const { loading, error, analysis } = props;
+  const promptInputRef = useRef<HTMLInputElement | null>(null);
+  const recommendedPrompts = [
+    "What does this mean about how they feel?",
+    "How should I respond without sounding needy?",
+    "Help me say this clearly without overexplaining.",
+  ];
+
+  useEffect(() => {
+    promptInputRef.current?.focus();
+  }, [props.analysis, props.chatLoading]);
+
+  const fillSuggestedPrompt = (value: string) => {
+    props.setChatInput(value);
+    promptInputRef.current?.focus();
+  };
+
+  const handlePromptKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const suggestion = recommendedPrompts[0];
+      if (!props.chatInput.trim() || suggestion.toLowerCase().startsWith(props.chatInput.trim().toLowerCase())) {
+        fillSuggestedPrompt(suggestion);
+      }
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      props.sendFollowUp();
+    }
+  };
 
   if (error) {
     return (
@@ -965,23 +994,35 @@ function ReadView(props: {
               <div ref={props.chatEndRef} />
             </div>
           )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            {recommendedPrompts.map((prompt, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => fillSuggestedPrompt(prompt)}
+                style={{ border: "1px solid rgba(0,0,0,0.08)", background: C.surface, color: C.ink, borderRadius: 999, padding: "8px 12px", fontSize: 12, cursor: "pointer", transition: "background 0.15s" }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", gap: 8, background: C.canvas, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.line}` }}>
-          <input
-            autoFocus
-            value={props.chatInput}
-            onChange={(e) => props.setChatInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && props.sendFollowUp()}
-            placeholder="“but what if I’m overthinking it?”"
-            disabled={props.chatLoading}
-            aria-label="Ask Miku a follow-up"
-            style={{ flex: 1, border: "none", outline: "none", fontSize: 13, background: "transparent", color: C.ink, padding: "8px 0" }}
-          />
-          <button onClick={props.sendFollowUp} disabled={props.chatLoading || !props.chatInput.trim()} aria-label="Send" style={{ width: 34, height: 34, borderRadius: 10, background: props.chatInput.trim() ? C.teal : "#e7e2da", color: "#fff", border: "none", cursor: props.chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Icon name="send" size={16} />
-          </button>
-        </div>
-      </Card>
-    </div>
+            <input
+              ref={promptInputRef}
+              value={props.chatInput}
+              onChange={(e) => props.setChatInput(e.target.value)}
+              onKeyDown={handlePromptKeyDown}
+              placeholder="Tap Tab to fill a quick follow-up prompt"
+              disabled={props.chatLoading}
+              aria-label="Ask Miku a follow-up"
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, background: "transparent", color: C.ink, padding: "8px 0" }}
+            />
+            <button onClick={props.sendFollowUp} disabled={props.chatLoading || !props.chatInput.trim()} aria-label="Send" style={{ width: 34, height: 34, borderRadius: 10, background: props.chatInput.trim() ? C.teal : "#e7e2da", color: "#fff", border: "none", cursor: props.chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Icon name="send" size={16} />
+            </button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

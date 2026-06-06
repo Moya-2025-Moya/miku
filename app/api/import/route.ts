@@ -4,6 +4,7 @@ import { extractImport } from "@/lib/services/import";
 import { findProfileByName, createProfile } from "@/lib/services/profiles";
 import { archiveMessages } from "@/lib/services/archive";
 import { isSupabaseConfigured } from "@/lib/db";
+import { errorResponse } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ...extracted, profile_id: profileId ?? null });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    return errorResponse(e);
   }
 }

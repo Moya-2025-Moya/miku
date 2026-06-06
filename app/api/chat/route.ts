@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { anthropic } from "@/lib/anthropic";
+import { z } from "zod";
+import { getAnthropic } from "@/lib/anthropic";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/prompts";
+import { errorResponse } from "@/lib/http";
 
-interface AnalysisContext {
-  vibe_read?: string;
-  reality_check?: string;
-  verdict?: string;
-  confidence?: string;
-}
+const chatSchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      })
+    )
+    .min(1),
+  analysis_context: z
+    .object({
+      vibe_read: z.string().optional(),
+      reality_check: z.string().optional(),
+      verdict: z.string().optional(),
+      confidence: z.string().optional(),
+    })
+    .optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const {
-      messages,
-      analysis_context,
-    }: {
-      messages: { role: string; content: string }[];
-      analysis_context?: AnalysisContext;
-    } = await req.json();
+    const { messages, analysis_context } = chatSchema.parse(await req.json());
 
     const systemText = analysis_context
       ? `${CHAT_SYSTEM_PROMPT}\n\n---\nPrior analysis you gave (for context, don't repeat it back verbatim):\nVibe read: ${analysis_context.vibe_read ?? ""}\nReality check: ${analysis_context.reality_check ?? ""}\nVerdict: ${analysis_context.verdict ?? ""} (${analysis_context.confidence ?? ""})`
@@ -25,19 +33,16 @@ export async function POST(req: NextRequest) {
 
     const model = process.env.ANALYSIS_MODEL ?? "claude-sonnet-4-6";
 
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model,
       max_tokens: 2048,
       system: systemText,
-      messages: messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
+      messages,
     });
 
     const text = response.content.find((b) => b.type === "text");
     return NextResponse.json({ reply: text?.type === "text" ? text.text : "" });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    return errorResponse(e);
   }
 }

@@ -1,4 +1,4 @@
-import { anthropic } from "../anthropic";
+import { getAnthropic } from "../anthropic";
 import { analysisOutputSchema } from "../schemas";
 import { SYSTEM_PROMPT, buildAnalysisUserMessage } from "../prompts";
 import { listArchive } from "./archive";
@@ -89,7 +89,7 @@ async function callClaude(userMessage: string) {
     messages: [{ role: "user", content: userMessage }],
   };
 
-  const response = await anthropic.messages.create(params);
+  const response = await getAnthropic().messages.create(params);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const textBlock = response.content.find((b: any) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {

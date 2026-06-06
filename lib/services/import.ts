@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { anthropic } from "../anthropic";
+import { getAnthropic } from "../anthropic";
 import { IMPORT_SYSTEM_PROMPT } from "../prompts";
 
 const extractionSchema = z.object({
@@ -43,7 +43,7 @@ export async function extractImport(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response = await (anthropic.messages.create as any)({
+  const response = await (getAnthropic().messages.create as any)({
     model,
     max_tokens: 4096,
     system: IMPORT_SYSTEM_PROMPT,

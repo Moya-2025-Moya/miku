@@ -3,6 +3,7 @@ import { analyzeSchema } from "@/lib/schemas";
 import { getProfile } from "@/lib/services/profiles";
 import { archiveMessages } from "@/lib/services/archive";
 import { runAnalysis, runStatelessAnalysis } from "@/lib/services/analysis";
+import { errorResponse } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,6 +27,6 @@ export async function POST(req: NextRequest) {
       await runStatelessAnalysis(body.messages, body.user_reaction)
     );
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    return errorResponse(e);
   }
 }

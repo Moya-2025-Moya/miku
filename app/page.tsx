@@ -47,23 +47,23 @@ const PROFILES: DemoProfile[] = [
       { id: "j8", sender: "them", body: "cool i'll let you know",                                    time: "3:45 PM" },
     ],
     patterns: [
-      { label: "Won't commit to a plan", detail: "Floats a hang, then walks back the specific day — 4 times now.", confidence: "high",   count: 4 },
+      { label: "Won't commit to a plan", detail: "Floats a hang, then walks back the specific day. 4 times now.", confidence: "high",   count: 4 },
       { label: "Goes vague when pinned", detail: "Switches to “maybe / i’ll let you know” the moment a day is set.", confidence: "medium", count: 3 },
       { label: "Reaches out, then stalls", detail: "Initiates warmly but lets it fizzle without closing the loop.",  confidence: "low",    count: 2 },
     ],
     history: [
       { verdict: "“I’ll let you know” is a no with a smile.",     confidence: "high",   when: "now" },
       { verdict: "They want credit for asking, not the plan.",    confidence: "medium", when: "last week" },
-      { verdict: "Not flaky about you — flaky about commitment.", confidence: "medium", when: "2 weeks ago" },
+      { verdict: "Not flaky about you. Flaky about commitment.", confidence: "medium", when: "2 weeks ago" },
     ],
   },
   {
     id: "sarah",
     name: "Sarah",
     relationship: "Coworker",
-    blurb: "“Just circling back 🙂” — the smile is a weapon.",
+    blurb: "“Just circling back 🙂”. The smile is a weapon.",
     messages: [
-      { id: "s1", sender: "them", body: "Just circling back on the deck — did you get a chance? 🙂",    time: "9:02 AM" },
+      { id: "s1", sender: "them", body: "Just circling back on the deck, did you get a chance? 🙂",    time: "9:02 AM" },
       { id: "s2", sender: "me",   body: "morning! yep sending it over by noon",                         time: "9:14 AM" },
       { id: "s3", sender: "them", body: "Great, because I told leadership it’d be ready first thing.",   time: "9:15 AM" },
       { id: "s4", sender: "them", body: "No worries though! Whatever works for you 🙂",                  time: "9:15 AM" },
@@ -77,7 +77,7 @@ const PROFILES: DemoProfile[] = [
     ],
     history: [
       { verdict: "“No worries” is on the record so the worry is yours.", confidence: "high", when: "now" },
-      { verdict: "She’s not asking — she’s documenting.",                confidence: "high", when: "3 days ago" },
+      { verdict: "She’s not asking. She’s documenting.",                confidence: "high", when: "3 days ago" },
     ],
   },
   {
@@ -99,7 +99,7 @@ const PROFILES: DemoProfile[] = [
       { label: "Resets the clock", detail: "Goes cold, then revives with a low-effort sweet text.",        confidence: "medium", count: 2 },
     ],
     history: [
-      { verdict: "“Miss your face” at midnight isn’t a plan — it’s a placeholder.", confidence: "high",   when: "now" },
+      { verdict: "“Miss your face” at midnight isn’t a plan. It’s a placeholder.", confidence: "high",   when: "now" },
       { verdict: "Into the feeling of you, not the logistics of you.",             confidence: "medium", when: "5 days ago" },
     ],
   },
@@ -313,7 +313,7 @@ export default function Home() {
       }
       if (!acc) setLast("…no reply came through.");
     } catch {
-      setFollowUps((p) => [...p, { role: "assistant", text: "Network hiccup — try again." }]);
+      setFollowUps((p) => [...p, { role: "assistant", text: "Network hiccup, try again." }]);
     } finally { setChatLoading(false); }
   }
 
@@ -368,7 +368,7 @@ export default function Home() {
           >
             <Icon name="plus" size={16} /> Add someone · paste / screenshot
           </button>
-          {copied === "import" && <div style={{ fontSize: 11, color: C.ink3, textAlign: "center", marginTop: 6 }}>Capture is wired on the backend — UI coming soon.</div>}
+          {copied === "import" && <div style={{ fontSize: 11, color: C.ink3, textAlign: "center", marginTop: 6 }}>Capture is wired on the backend, UI coming soon.</div>}
           <a
             href="/relationship-library.html"
             style={{ marginTop: 8, width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.line}`, background: C.surface, color: C.teal, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
@@ -461,7 +461,7 @@ export default function Home() {
               <>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/miku.png" alt={`Miku — read ${selected.size}`} style={{ width: 78, height: 78, objectFit: "cover", borderRadius: 14, boxShadow: `0 18px 40px ${C.teal}33` }} />
+                  <img src="/miku.png" alt={`Miku, read ${selected.size}`} style={{ width: 78, height: 78, objectFit: "cover", borderRadius: 14, boxShadow: `0 18px 40px ${C.teal}33` }} />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                     <span style={{ fontSize: 17, fontWeight: 700, color: C.teal, lineHeight: 1 }}>Ask Miku</span>
                     <span style={{ fontSize: 13, color: C.ink3 }}>{selected.size} selected</span>
@@ -626,7 +626,7 @@ function ReadView(props: {
         <div>
           <div style={{ fontFamily: "Fraunces, serif", fontSize: 20, fontWeight: 600, color: C.ink, marginBottom: 6 }}>Pick the messages that bug you</div>
           <div style={{ fontSize: 13.5, lineHeight: 1.65, color: C.ink2, maxWidth: 250 }}>
-            Tap the ones you can’t stop re-reading — I’ll tell you what’s actually going on.
+            Tap the ones you can’t stop re-reading. I’ll tell you what’s actually going on.
           </div>
         </div>
       </div>
@@ -757,7 +757,7 @@ function ShareCard({ analysis, who, onClose, copied, flash }: { analysis: Analys
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => flash("share-copy", `“${analysis.verdict}” — Miku on ${who}`)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px", borderRadius: 14, border: "none", background: "#fff", color: C.ink, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => flash("share-copy", `“${analysis.verdict}”\n\nMiku on ${who}`)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px", borderRadius: 14, border: "none", background: "#fff", color: C.ink, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
             {copied === "share-copy" ? <><Icon name="check" size={16} stroke={3} /> Copied</> : <><Icon name="copy" size={16} /> Copy verdict</>}
           </button>
           <button onClick={onClose} aria-label="Close" style={{ width: 50, borderRadius: 14, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>

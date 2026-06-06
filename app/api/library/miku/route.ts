@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const { message, profile } = schema.parse(await req.json());
     const system =
-      "You are Miku — a personal relationship memory library.\n" +
+      "You are Miku, a personal relationship memory library.\n" +
       "You help users understand and manage their relationship dynamics using psychological insight.\n\n" +
       "Current profile (full content including all analysis text):\n" +
       JSON.stringify(profile, null, 2) +
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       "- For 'updateAnalysis': field names are 'happened', 'trigger', 'forward'.\n" +
       "- For batch pronoun/rewrite tasks: include ALL fields of ALL affected events. Rewrite the complete text for each field — not just the changed words.\n" +
       "- For analysis/summary questions: use action 'none' and answer in reply.\n" +
-      "- Be warm, psychologically insightful, and concise.";
+      "- Be warm, insightful, and concise. Talk like a real friend texting, not like an AI. NEVER use an em dash (—) or en dash (–); use a comma, a period, or a new sentence.";
 
     const result = await callSingleTool({ system, userContent: message, tool: MIKU_TOOL });
     return NextResponse.json(result ?? { reply: "Something went wrong.", action: "none" });

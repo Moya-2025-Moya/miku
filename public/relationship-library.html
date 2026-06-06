@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 <style>
   :root{
     --sage-cream:#fbf6ef;
@@ -517,6 +518,91 @@
   ::-webkit-scrollbar{width:5px}
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--sage-line);border-radius:3px}
+
+  /* ===== Archetype card ===== */
+  .archetype-btn{
+    border:1.5px solid var(--sage-teal);background:transparent;color:var(--sage-teal);
+    border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s;align-self:flex-start;
+    margin-left:10px;
+  }
+  .archetype-btn:hover{background:var(--sage-teal);color:#fff}
+  .archetype-btn:disabled{opacity:.5;cursor:default}
+
+  .arch-overlay{
+    position:fixed;inset:0;z-index:1000;
+    background:rgba(20,15,10,.65);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    display:none;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .arch-overlay.open{display:flex}
+
+  @keyframes arch-in{
+    from{transform:scale(.86) translateY(16px);opacity:0}
+    to{transform:scale(1) translateY(0);opacity:1}
+  }
+  .arch-card{
+    width:100%;max-width:360px;border-radius:28px;
+    padding:36px 28px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:0;
+    text-align:center;position:relative;
+    box-shadow:0 28px 80px rgba(0,0,0,.45);
+    animation:arch-in .32s cubic-bezier(.22,.68,0,1.2) both;
+    overflow:hidden;
+  }
+  .arch-noise{
+    position:absolute;inset:0;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+    opacity:.18;mix-blend-mode:overlay;
+  }
+  .arch-close{
+    position:absolute;top:14px;right:16px;
+    background:rgba(255,255,255,.18);border:none;color:#fff;
+    width:28px;height:28px;border-radius:50%;cursor:pointer;
+    font-size:15px;display:grid;place-items:center;
+    transition:.15s;
+  }
+  .arch-close:hover{background:rgba(255,255,255,.32)}
+  .arch-animal{font-size:72px;line-height:1;margin-bottom:14px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.3))}
+  .arch-name{
+    font-family:'Fraunces',serif;font-weight:600;font-size:30px;
+    color:#fff;line-height:1;letter-spacing:-.3px;margin-bottom:6px;
+  }
+  .arch-tagline{
+    font-size:13px;color:rgba(255,255,255,.75);
+    font-style:italic;margin-bottom:16px;
+  }
+  .arch-rarity{
+    background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);
+    color:#fff;border-radius:20px;padding:5px 14px;
+    font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    margin-bottom:18px;
+  }
+  .arch-divider{
+    width:40px;height:1px;background:rgba(255,255,255,.25);margin-bottom:16px;
+  }
+  .arch-reason{
+    font-size:13px;line-height:1.65;color:rgba(255,255,255,.9);
+    margin-bottom:18px;max-width:300px;
+  }
+  .arch-traits{
+    display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:24px;
+  }
+  .arch-trait{
+    background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+    color:#fff;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;
+    letter-spacing:.3px;
+  }
+  .arch-share-row{display:flex;gap:10px;width:100%;margin-bottom:14px}
+  .arch-share-btn{
+    flex:1;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);
+    color:#fff;border-radius:12px;padding:11px 0;
+    font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:.15s;
+  }
+  .arch-share-btn:hover{background:rgba(255,255,255,.28)}
+  .arch-brand{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.4px}
 </style>
 </head>
 <body>
@@ -891,6 +977,52 @@ var TRIGGER_CATS = [
 ];
 
 var selfProfileCache = null;
+var archetypeCache = null;
+
+var ARCHETYPES = {
+  wolf: {
+    key:"wolf", emoji:"🐺", name:"The Wolf", rarity:"11%",
+    gradient:"linear-gradient(145deg,#4a6fa5,#2d4a7a)",
+    tagline:"Loyal to the bone, guarded by design.",
+    traits:["Fiercely loyal","Emotionally guarded","Quietly carries others"]
+  },
+  crane: {
+    key:"crane", emoji:"🦢", name:"The Crane", rarity:"14%",
+    gradient:"linear-gradient(145deg,#7b9e87,#4a7c6f)",
+    tagline:"Grace under emotional pressure.",
+    traits:["High EQ","Adaptive","Self-erasing"]
+  },
+  bear: {
+    key:"bear", emoji:"🐻", name:"The Bear", rarity:"18%",
+    gradient:"linear-gradient(145deg,#8b6914,#5c3a10)",
+    tagline:"The one everyone leans on.",
+    traits:["Steady anchor","Absorbs chaos","Slow to break, deep when broken"]
+  },
+  fox: {
+    key:"fox", emoji:"🦊", name:"The Fox", rarity:"9%",
+    gradient:"linear-gradient(145deg,#c4602a,#8b3a1e)",
+    tagline:"Sees everything, says less.",
+    traits:["Pattern reader","Processes alone","Sharp but unseen"]
+  },
+  deer: {
+    key:"deer", emoji:"🦌", name:"The Deer", rarity:"16%",
+    gradient:"linear-gradient(145deg,#9b7bbd,#6b4a8f)",
+    tagline:"Feels it all before anyone else.",
+    traits:["Deeply empathetic","Conflict-avoidant","Needs gentleness to open"]
+  },
+  crow: {
+    key:"crow", emoji:"🐦", name:"The Crow", rarity:"7%",
+    gradient:"linear-gradient(145deg,#4a4a5e,#2a2a3e)",
+    tagline:"Processes pain through understanding.",
+    traits:["Analytical","Inconsistency-sensitive","Quiet intensity"]
+  },
+  otter: {
+    key:"otter", emoji:"🦦", name:"The Otter", rarity:"25%",
+    gradient:"linear-gradient(145deg,#3b9e9e,#1e6e7e)",
+    tagline:"Warmth is your superpower and your risk.",
+    traits:["Connection-seeker","Emotionally generous","Brings lightness"]
+  }
+};
 
 function loadSelf() {
   currentId = null;
@@ -962,9 +1094,16 @@ function renderSelfContent() {
     '<div class="self-section"><h3>Emotional triggers</h3><p style="font-size:12px;color:var(--sage-sub);margin-bottom:12px">What types of situations show up most in your archived events</p>' + triggerHtml + '</div>' +
     '<div class="self-section"><h3>Who you are in these relationships</h3>' + profileHtml + '</div>' +
     '<div class="self-section"><h3>Growth edges</h3>' + growthHtml + '</div>' +
-    '<button class="self-gen-btn" id="selfGenBtn" onclick="generateSelfProfile()">' +
-      (selfProfileCache ? '↺ Regenerate analysis' : '✦ Generate Miku\'s analysis') +
-    '</button>';
+    '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">' +
+      '<button class="self-gen-btn" id="selfGenBtn" onclick="generateSelfProfile()">' +
+        (selfProfileCache ? '↺ Regenerate analysis' : '✦ Generate Miku\'s analysis') +
+      '</button>' +
+      (selfProfileCache
+        ? '<button class="archetype-btn" id="archetypeBtn" onclick="generateArchetype()">' +
+            (archetypeCache ? '↺ Your archetype' : '✦ What\'s your archetype?') +
+          '</button>'
+        : '') +
+    '</div>';
 }
 
 async function generateSelfProfile() {
@@ -1029,6 +1168,166 @@ async function generateSelfProfile() {
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = "✦ Generate Miku\'s analysis"; }
     alert("Error: " + e.message);
+  }
+}
+
+/* ===== ARCHETYPE ===== */
+async function generateArchetype() {
+  var key = getMikuKey();
+  if (!key) { alert("Add your API key (⚙) to generate your archetype."); return; }
+  if (!selfProfileCache) { alert("Generate your profile analysis first."); return; }
+  var btn = document.getElementById("archetypeBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Reading you…"; }
+
+  var ctx = Object.values(profileData).map(function(p) {
+    return { person: p.name, type: p.type,
+      events: p.archive.map(function(e){ return {title:e.title,tags:e.tags||[],analysis:e.analysis}; }) };
+  });
+
+  var ARCHETYPE_TOOL = {
+    name: "archetype_reveal",
+    description: "Assign the user to one of 7 animal archetypes based on their relationship patterns.",
+    input_schema: {
+      type: "object",
+      required: ["archetype_key","personalized_reason"],
+      properties: {
+        archetype_key: {
+          type: "string",
+          enum: ["wolf","crane","bear","fox","deer","crow","otter"],
+          description: "The archetype that best fits this person authentically — not the most flattering, the most accurate."
+        },
+        personalized_reason: {
+          type: "string",
+          description: "1–2 sentences explaining why this person is this archetype. Reference something specific from their patterns or events."
+        }
+      }
+    }
+  };
+
+  var archetypeSysPrompt = "You are Miku. Based on this person's psychological profile and relationship archive, assign them one of 7 animal archetypes:\n\n" +
+    "• wolf — fiercely loyal inner circle, emotionally guarded until trust is earned\n" +
+    "• crane — high emotional intelligence, socially graceful, tends to self-erase for others\n" +
+    "• bear — steady anchor, absorbs others' chaos, deeply wounded when trust breaks\n" +
+    "• fox — sharp pattern reader, processes alone, sees dynamics others miss\n" +
+    "• deer — deeply empathetic, conflict-avoidant, absorbs others' emotions\n" +
+    "• crow — analytical, highly sensitive to inconsistency, processes pain through understanding\n" +
+    "• otter — warmth-giver, connection-seeker, can over-invest emotionally\n\n" +
+    "Choose the one that fits most authentically. Write a 1–2 sentence personalised reason referencing something specific from their patterns.";
+
+  try {
+    var res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", max_tokens: 300,
+        system: archetypeSysPrompt,
+        tools: [ARCHETYPE_TOOL],
+        tool_choice: {type: "any"},
+        messages: [{role:"user", content:
+          "Profile:\n" + selfProfileCache.profile + "\n\nGrowth edges:\n" + selfProfileCache.growth +
+          "\n\nRelationship archive summary:\n" + JSON.stringify(ctx, null, 2)
+        }]
+      })
+    });
+    var data = await res.json();
+    var toolBlock = data.content && data.content.find(function(c){ return c.type === "tool_use"; });
+    if (toolBlock && toolBlock.input && ARCHETYPES[toolBlock.input.archetype_key]) {
+      archetypeCache = Object.assign({}, ARCHETYPES[toolBlock.input.archetype_key], {
+        reason: toolBlock.input.personalized_reason
+      });
+      showArchetypeModal();
+      renderSelfContent(); /* refresh button label */
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = "✦ What's your archetype?"; }
+      alert("Couldn't determine archetype — try again.");
+    }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = "✦ What's your archetype?"; }
+    alert("Error: " + e.message);
+  }
+}
+
+function showArchetypeModal() {
+  var a = archetypeCache;
+  if (!a) return;
+  document.getElementById("archAnimal").textContent   = a.emoji;
+  document.getElementById("archName").textContent     = a.name;
+  document.getElementById("archTagline").textContent  = a.tagline;
+  document.getElementById("archRarity").textContent   = "Rarity: " + a.rarity + " of people";
+  document.getElementById("archReason").textContent   = a.reason;
+  document.getElementById("archTraits").innerHTML     = a.traits.map(function(t){
+    return '<span class="arch-trait">' + t + '</span>';
+  }).join("");
+  document.getElementById("archCard").style.background = a.gradient;
+  document.getElementById("archOverlay").classList.add("open");
+}
+
+function closeArchetype(e) {
+  if (e.target === document.getElementById("archOverlay")) {
+    document.getElementById("archOverlay").classList.remove("open");
+  }
+}
+
+async function downloadArchetypeCard() {
+  var card = document.getElementById("archCard");
+  /* hide share buttons + brand temporarily for clean export */
+  var shareRow = card.querySelector(".arch-share-row");
+  var brand = card.querySelector(".arch-brand");
+  var closeBtn = card.querySelector(".arch-close");
+  if (shareRow) shareRow.style.display = "none";
+  if (closeBtn) closeBtn.style.display = "none";
+
+  try {
+    var canvas = await html2canvas(card, {scale: 3, useCORS: true, backgroundColor: null});
+    var link = document.createElement("a");
+    link.download = "miku-archetype.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch(e) {
+    alert("Download failed: " + e.message);
+  }
+
+  if (shareRow) shareRow.style.display = "";
+  if (closeBtn) closeBtn.style.display = "";
+}
+
+async function shareArchetype() {
+  var a = archetypeCache;
+  if (!a) return;
+  var text = "I'm " + a.name + " (" + a.rarity + " of people) — \"" + a.tagline + "\" — find out your relationship archetype with Miku";
+  if (navigator.share) {
+    /* try with image first */
+    try {
+      var card = document.getElementById("archCard");
+      var shareRow = card.querySelector(".arch-share-row");
+      var closeBtn = card.querySelector(".arch-close");
+      if (shareRow) shareRow.style.display = "none";
+      if (closeBtn) closeBtn.style.display = "none";
+      var canvas = await html2canvas(card, {scale: 3, useCORS: true, backgroundColor: null});
+      if (shareRow) shareRow.style.display = "";
+      if (closeBtn) closeBtn.style.display = "";
+      canvas.toBlob(async function(blob) {
+        var file = new File([blob], "miku-archetype.png", {type:"image/png"});
+        try {
+          await navigator.share({title:"My Miku Archetype", text: text, files:[file]});
+        } catch(e2) {
+          /* file share not supported — fall back to text */
+          try { await navigator.share({title:"My Miku Archetype", text: text}); } catch(e3) {}
+        }
+      }, "image/png");
+      return;
+    } catch(e) {
+      if (shareRow) shareRow.style.display = "";
+      if (closeBtn) closeBtn.style.display = "";
+    }
+    try { await navigator.share({title:"My Miku Archetype", text: text}); return; } catch(e) {}
+  }
+  /* clipboard fallback */
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Copied to clipboard — paste anywhere to share!");
+  } catch(e) {
+    alert(text);
   }
 }
 
@@ -1749,5 +2048,25 @@ function addPersonPrompt() {
 /* boot */
 renderSidebar();
 </script>
+
+<!-- Archetype modal -->
+<div class="arch-overlay" id="archOverlay" onclick="closeArchetype(event)">
+  <div class="arch-card" id="archCard">
+    <div class="arch-noise"></div>
+    <button class="arch-close" onclick="document.getElementById('archOverlay').classList.remove('open')">✕</button>
+    <div class="arch-animal" id="archAnimal"></div>
+    <div class="arch-name" id="archName"></div>
+    <div class="arch-tagline" id="archTagline"></div>
+    <div class="arch-rarity" id="archRarity"></div>
+    <div class="arch-divider"></div>
+    <div class="arch-reason" id="archReason"></div>
+    <div class="arch-traits" id="archTraits"></div>
+    <div class="arch-share-row">
+      <button class="arch-share-btn" onclick="downloadArchetypeCard()">↓ Save image</button>
+      <button class="arch-share-btn" onclick="shareArchetype()">↑ Share</button>
+    </div>
+    <div class="arch-brand">made with miku</div>
+  </div>
+</div>
 </body>
 </html>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { SEED_PROFILES } from "@/lib/seed-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,84 +27,57 @@ interface DemoProfile {
   messages: ChatMessage[];
   patterns: DemoPattern[];
   history: PastRead[];
+  color?: string;
 }
 
-// ─── Demo library (per-relationship — the "memory" is real, just mocked) ───────
+// ─── Demo library (per-relationship — the memory library personas) ─────────────
 
-const PROFILES: DemoProfile[] = [
-  {
-    id: "jordan",
-    name: "Jordan",
-    relationship: "Friend",
-    blurb: "“Maybe” is doing a lot of work here.",
-    messages: [
-      { id: "j1", sender: "them", body: "hey are you free this weekend?",                           time: "2:14 PM" },
-      { id: "j2", sender: "me",   body: "yeah should be! what did you have in mind?",                time: "2:15 PM" },
-      { id: "j3", sender: "them", body: "idk maybe hang? haven't seen you in a while",               time: "2:16 PM" },
-      { id: "j4", sender: "me",   body: "for sure, saturday works",                                  time: "2:17 PM" },
-      { id: "j5", sender: "them", body: "oh actually i might have something saturday, let me check", time: "2:30 PM" },
-      { id: "j6", sender: "them", body: "yeah probably can't do saturday. sunday maybe?",            time: "2:31 PM" },
-      { id: "j7", sender: "me",   body: "sunday works too",                                          time: "2:32 PM" },
-      { id: "j8", sender: "them", body: "cool i'll let you know",                                    time: "3:45 PM" },
-    ],
-    patterns: [
-      { label: "Won't commit to a plan", detail: "Floats a hang, then walks back the specific day. 4 times now.", confidence: "high",   count: 4 },
-      { label: "Goes vague when pinned", detail: "Switches to “maybe / i’ll let you know” the moment a day is set.", confidence: "medium", count: 3 },
-      { label: "Reaches out, then stalls", detail: "Initiates warmly but lets it fizzle without closing the loop.",  confidence: "low",    count: 2 },
-    ],
-    history: [
-      { verdict: "“I’ll let you know” is a no with a smile.",     confidence: "high",   when: "now" },
-      { verdict: "They want credit for asking, not the plan.",    confidence: "medium", when: "last week" },
-      { verdict: "Not flaky about you. Flaky about commitment.", confidence: "medium", when: "2 weeks ago" },
-    ],
-  },
-  {
-    id: "sarah",
-    name: "Sarah",
-    relationship: "Coworker",
-    blurb: "“Just circling back 🙂”. The smile is a weapon.",
-    messages: [
-      { id: "s1", sender: "them", body: "Just circling back on the deck, did you get a chance? 🙂",    time: "9:02 AM" },
-      { id: "s2", sender: "me",   body: "morning! yep sending it over by noon",                         time: "9:14 AM" },
-      { id: "s3", sender: "them", body: "Great, because I told leadership it’d be ready first thing.",   time: "9:15 AM" },
-      { id: "s4", sender: "them", body: "No worries though! Whatever works for you 🙂",                  time: "9:15 AM" },
-      { id: "s5", sender: "me",   body: "noon should be fine",                                           time: "9:20 AM" },
-      { id: "s6", sender: "them", body: "Perfect. I’ll just let them know there’s a delay on your end.", time: "9:21 AM" },
-    ],
-    patterns: [
-      { label: "Weaponized politeness", detail: "Smiley + “no worries” paired with a deadline she invented.", confidence: "high",   count: 5 },
-      { label: "Builds a paper trail",  detail: "Frames things so any slip lands as “your end.”",            confidence: "high",   count: 3 },
-      { label: "Manufactures urgency",  detail: "Cites leadership / timelines that weren’t actually agreed.",  confidence: "medium", count: 2 },
-    ],
-    history: [
-      { verdict: "“No worries” is on the record so the worry is yours.", confidence: "high", when: "now" },
-      { verdict: "She’s not asking. She’s documenting.",                confidence: "high", when: "3 days ago" },
-    ],
-  },
-  {
-    id: "alex",
-    name: "Alex",
-    relationship: "Dating",
-    blurb: "Warm at midnight, gone by morning.",
-    messages: [
-      { id: "a1", sender: "them", body: "had such a good time the other night 🥹", time: "11:48 PM" },
-      { id: "a2", sender: "me",   body: "me too!! we should do it again soon",      time: "11:50 PM" },
-      { id: "a3", sender: "them", body: "for sure 💛",                              time: "11:51 PM" },
-      { id: "a4", sender: "me",   body: "free this thurs?",                         time: "9:30 AM" },
-      { id: "a5", sender: "them", body: "ahh this week’s kinda crazy, lemme see",   time: "1:12 PM" },
-      { id: "a6", sender: "them", body: "miss your face tho",                       time: "12:06 AM" },
-    ],
-    patterns: [
-      { label: "Breadcrumbing", detail: "Affection late at night, evasive about actual plans by day.",   confidence: "high",   count: 4 },
-      { label: "Warm words, no dates", detail: "“We should” / “miss you” never resolves to a real time.", confidence: "high",   count: 3 },
-      { label: "Resets the clock", detail: "Goes cold, then revives with a low-effort sweet text.",        confidence: "medium", count: 2 },
-    ],
-    history: [
-      { verdict: "“Miss your face” at midnight isn’t a plan. It’s a placeholder.", confidence: "high",   when: "now" },
-      { verdict: "Into the feeling of you, not the logistics of you.",             confidence: "medium", when: "5 days ago" },
-    ],
-  },
-];
+function normalizeText(text: string) {
+  return text.replace(/<[^>]+>/g, "").trim();
+}
+
+function normalizeId(text: string) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+const PROFILES: DemoProfile[] = SEED_PROFILES.map((p) => {
+  const allMessages = p.archive.flatMap((event) =>
+    event.msgs.map((m) => ({
+      ...m,
+      date: event.date,
+    }))
+  );
+
+  const messages = allMessages.map((m, idx) => {
+    const sender: "me" | "them" = m.who === "Me" ? "me" : "them";
+    return {
+      id: `${normalizeId(p.name)}-${idx}`,
+      sender,
+      body: normalizeText(m.text),
+      time: m.date,
+    };
+  });
+
+  return {
+    id: normalizeId(p.name),
+    name: p.name,
+    relationship: p.type[0].toUpperCase() + p.type.slice(1),
+    blurb: normalizeText(p.notes).split(".")[0] + ".",
+    messages,
+    patterns: p.patterns.map((label, index) => ({
+      label,
+      detail: label,
+      confidence: index === 0 ? "high" : index === 1 ? "medium" : "low",
+      count: 4 - Math.min(index, 2),
+    })),
+    history: p.archive.slice(0, 3).map((event, index) => ({
+      verdict: event.title,
+      confidence: index === 0 ? "high" : "medium",
+      when: event.date,
+    })),
+    color: p.color,
+  };
+});
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -196,13 +170,16 @@ function parsePartialAnalysis(buf: string): AnalysisResult {
   };
 }
 
-function avatarBg(id: string): string {
+function avatarBg(profile: DemoProfile | string): string {
+  if (typeof profile !== "string" && profile.color) return profile.color;
+  const key = typeof profile === "string" ? profile : profile.id;
   const map: Record<string, string> = {
     jordan: "linear-gradient(135deg,#0f766e,#14b8a6)",
-    sarah:  "linear-gradient(135deg,#7c3aed,#a78bfa)",
-    alex:   "linear-gradient(135deg,#e07a59,#f0a58a)",
+    "mum-": "linear-gradient(135deg,#f9cc6b,#f0a83b)",
+    "alex-design-lead": "linear-gradient(135deg,#7ac99b,#3fb37f)",
+    liv: "linear-gradient(135deg,#c79be8,#9b6be2)",
   };
-  return map[id] ?? "linear-gradient(135deg,#0f766e,#e07a59)";
+  return map[key] ?? "linear-gradient(135deg,#0f766e,#e07a59)";
 }
 
 // ─── Add-to-home-screen hint (mobile web only) ─────────────────────────────────
@@ -380,7 +357,7 @@ export default function Home() {
             const isActive = active.id === p.id;
             return (
               <button key={p.id} className={`sr-convo${isActive ? " is-active" : ""}`} onClick={() => openConversation(p)} aria-pressed={isActive}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: avatarBg(p.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: avatarBg(p), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17 }}>
                   {p.name.charAt(0)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -395,15 +372,242 @@ export default function Home() {
           })}
         </div>
 
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+
+          
+
+
+
+
+          
+          
+
+          
+
+          
+
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+
+          
+
+          
+
+          
+          
+          
+          
+          
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+
+          
+          
+          
+          
+          
+          
+          
+
+          
+          
+          
+          
+
+          
+          
+          
+          
+          
+
+          
+          
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <div style={{ padding: "10px 14px 16px", borderTop: `1px solid ${C.line}` }}>
-          <button
-            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 14px", borderRadius: 12, border: `1.5px dashed ${C.teal}55`, background: "transparent", color: C.teal, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-            onClick={() => flash("import", "demo")}
-            title="Demo placeholder"
-          >
-            <Icon name="plus" size={16} /> Add someone · paste / screenshot
-          </button>
-          {copied === "import" && <div style={{ fontSize: 11, color: C.ink3, textAlign: "center", marginTop: 6 }}>Capture is wired on the backend, UI coming soon.</div>}
           <a
             href="/relationship-library.html"
             style={{ marginTop: 8, width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.line}`, background: C.surface, color: C.teal, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
@@ -420,7 +624,7 @@ export default function Home() {
           <button className="sr-back sr-iconbtn" onClick={() => { setMview("list"); setPanelOpen(false); }} aria-label="Back to people" style={{ width: 30, height: 34, color: C.teal }}>
             <Icon name="back" size={20} />
           </button>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: avatarBg(active.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17, flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: avatarBg(active), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17, flexShrink: 0 }}>
             {active.name.charAt(0)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>

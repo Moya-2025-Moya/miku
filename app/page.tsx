@@ -417,18 +417,6 @@ export default function Home() {
           })}
         </div>
 
-        <div style={{ padding: "10px 14px 16px", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-          <button
-            onClick={() => openConversation({ id: "demo-new", name: "New chat", relationship_type: null, avatar_emoji: "✦" })}
-            style={{
-              width: "100%", padding: "11px 14px", borderRadius: 12,
-              border: `1.5px dashed ${C.teal}55`, background: "transparent",
-              color: C.teal, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif",
-            }}
-          >
-            + New relationship / import a screenshot
-          </button>
-        </div>
       </aside>
 
       {/* ── Center: chat ─────────────────────────────────────────────────── */}
@@ -456,9 +444,9 @@ export default function Home() {
                 onClick={() => (selected.size > 0 ? analyze() : setPanelOpen((v) => !v))}
                 className={selected.size > 0 ? "pulse" : "breathe"}
                 title={selected.size > 0 ? "Ask Miku" : "Toggle Miku"}
-                style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", cursor: "pointer", flexShrink: 0, boxShadow: `0 3px 12px ${C.teal}44` }}
+                style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal} 0%, ${C.coral} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17, flexShrink: 0, color: "#fff", boxShadow: `0 3px 12px ${C.teal}44` }}
               >
-                <img src="/miku.svg" alt="Miku" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%" }} />
+                ✦
               </div>
             </div>
 
@@ -667,7 +655,7 @@ export default function Home() {
         ) : (
           /* Empty state */
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 32px", textAlign: "center", gap: 16 }}>
-            <div className="breathe" style={{ width: 68, height: 68, borderRadius: "50%", overflow: "hidden", background: "#fff", border: `1.5px solid ${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/miku.svg" alt="Miku" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%" }} /></div>
+            <div className="breathe" style={{ width: 68, height: 68, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}1a 0%, ${C.coral}1a 100%)`, border: `1.5px solid ${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: C.teal }}>✦</div>
             <div>
               <div style={{ fontFamily: "Fraunces, serif", fontSize: 21, fontWeight: 600, color: C.text, marginBottom: 8 }}>Ready to read</div>
               <div style={{ fontSize: 13.5, lineHeight: 1.7, color: C.muted, maxWidth: 240, margin: "0 auto" }}>

@@ -23,7 +23,7 @@ export async function archiveMessages(input: ArchiveInput): Promise<MessageRow[]
 }
 
 export async function listArchive(profileId: string, limit = 200): Promise<MessageRow[]> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("messages")
     .select("*")
     .eq("profile_id", profileId)
@@ -37,7 +37,7 @@ export async function updateMessage(
   id: string,
   updates: Partial<Pick<MessageRow, "annotation" | "body" | "sender">>
 ): Promise<MessageRow | null> {
-  const { data, error } = await db
+  const { data, error } = await getDb()
     .from("messages")
     .update(updates)
     .eq("id", id)

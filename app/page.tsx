@@ -369,6 +369,12 @@ export default function Home() {
             <Icon name="plus" size={16} /> Add someone · paste / screenshot
           </button>
           {copied === "import" && <div style={{ fontSize: 11, color: C.ink3, textAlign: "center", marginTop: 6 }}>Capture is wired on the backend — UI coming soon.</div>}
+          <a
+            href="/relationship-library.html"
+            style={{ marginTop: 8, width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.line}`, background: C.surface, color: C.teal, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+          >
+            <Icon name="memory" size={16} /> Open Memory Library
+          </a>
         </div>
       </aside>
 
@@ -550,6 +556,12 @@ function MemoryView({ profile }: { profile: DemoProfile }) {
       <p style={{ fontSize: 11.5, lineHeight: 1.6, color: C.ink3, textAlign: "center", margin: "4px 12px 0" }}>
         Every read on {profile.name} sharpens the next one. That’s the whole point.
       </p>
+      <a
+        href={`/relationship-library.html?person=${encodeURIComponent(profile.name)}`}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 4, padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.line}`, background: C.surface, color: C.teal, fontSize: 12.5, fontWeight: 600, textDecoration: "none" }}
+      >
+        <Icon name="memory" size={15} /> Open {profile.name}’s full library
+      </a>
     </div>
   );
 }

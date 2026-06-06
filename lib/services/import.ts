@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic } from "../anthropic";
 import { IMPORT_SYSTEM_PROMPT } from "../prompts";
 
@@ -21,11 +22,7 @@ export async function extractImport(
 ): Promise<z.infer<typeof extractionSchema>> {
   const model = process.env.IMPORT_MODEL ?? "claude-haiku-4-5-20251001";
 
-  type ContentBlock =
-    | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
-    | { type: "text"; text: string };
-
-  const content: ContentBlock[] = [];
+  const content: Anthropic.ContentBlockParam[] = [];
 
   if (args.image) {
     content.push({
@@ -42,46 +39,45 @@ export async function extractImport(
     content.push({ type: "text", text: args.text });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response = await (getAnthropic().messages.create as any)({
+  const tools: Anthropic.Tool[] = [
+    {
+      name: "extract_messages",
+      description: "Extract messages from the provided content",
+      input_schema: {
+        type: "object",
+        properties: {
+          suggested_name: { type: ["string", "null"] },
+          messages: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                sender: { type: "string" },
+                body: { type: "string" },
+              },
+              required: ["sender", "body"],
+            },
+          },
+          summary: { type: "string" },
+        },
+        required: ["suggested_name", "messages", "summary"],
+      },
+    },
+  ];
+
+  const response = await getAnthropic().messages.create({
     model,
     max_tokens: 4096,
     system: IMPORT_SYSTEM_PROMPT,
     messages: [{ role: "user", content }],
-    tools: [
-      {
-        name: "extract_messages",
-        description: "Extract messages from the provided content",
-        input_schema: {
-          type: "object",
-          properties: {
-            suggested_name: { type: ["string", "null"] },
-            messages: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  sender: { type: "string" },
-                  body: { type: "string" },
-                },
-                required: ["sender", "body"],
-              },
-            },
-            summary: { type: "string" },
-          },
-          required: ["suggested_name", "messages", "summary"],
-        },
-      },
-    ],
+    tools,
     tool_choice: { type: "any" },
   });
 
-  const toolBlock = response.content.find(
-    (b: { type: string }) => b.type === "tool_use"
-  );
+  const toolBlock = response.content.find((b) => b.type === "tool_use");
   if (!toolBlock || toolBlock.type !== "tool_use") {
     throw new Error("No extraction output from import");
   }
 
-  return extractionSchema.parse((toolBlock as { type: "tool_use"; input: unknown }).input);
+  return extractionSchema.parse(toolBlock.input);
 }

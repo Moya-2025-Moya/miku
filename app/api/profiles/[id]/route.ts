@@ -1,25 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProfile, updateProfile, deleteProfile } from "@/lib/services/profiles";
+import { updateProfileSchema } from "@/lib/schemas";
+import { errorResponse, getUserId } from "@/lib/http";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const profile = await getProfile(id);
-  if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(profile);
+  try {
+    const profile = await getProfile(id, getUserId(req));
+    if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(profile);
+  } catch (e) {
+    return errorResponse(e);
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   try {
-    return NextResponse.json(await updateProfile(id, await req.json()));
+    const input = updateProfileSchema.parse(await req.json());
+    return NextResponse.json(await updateProfile(id, input, getUserId(req)));
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    return errorResponse(e);
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  return NextResponse.json({ ok: await deleteProfile(id) });
+  try {
+    return NextResponse.json({ ok: await deleteProfile(id, getUserId(req)) });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

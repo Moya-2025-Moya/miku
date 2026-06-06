@@ -29,6 +29,24 @@ interface FollowUp {
   text: string;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  relationship_type?: string | null;
+  avatar_emoji?: string | null;
+  tagline?: string;
+}
+
+// Seed library so the homepage looks alive before Supabase has data / when it's
+// not configured. Real profiles from the API are merged on top by name.
+const DEMO_PROFILES: Profile[] = [
+  { id: "demo-jordan", name: "Jordan", relationship_type: "friend",   avatar_emoji: "🙂", tagline: "Keeps rescheduling — what's the read?" },
+  { id: "demo-sarah",  name: "Sarah",  relationship_type: "coworker", avatar_emoji: "💼", tagline: "Passive-aggressive Slack energy" },
+  { id: "demo-alex",   name: "Alex",   relationship_type: "dating",   avatar_emoji: "💘", tagline: "Hot and cold since last week" },
+];
+
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id);
+
 // ─── Demo conversation ────────────────────────────────────────────────────────
 
 const DEMO: ChatMessage[] = [
@@ -119,8 +137,10 @@ function ConfidenceBar({ level }: { level: string }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [view, setView]                   = useState<"home" | "chat">("home");
+  const [profiles, setProfiles]           = useState<Profile[]>(DEMO_PROFILES);
+  const [active, setActive]               = useState<Profile | null>(null);
   const [selected, setSelected]           = useState<Set<string>>(new Set());
-  const [profileId, setProfileId]         = useState<string | null>(null);
   const [analysis, setAnalysis]           = useState<AnalysisResult | null>(null);
   const [panelOpen, setPanelOpen]         = useState(false);
   const [loading, setLoading]             = useState(false);
@@ -133,20 +153,33 @@ export default function Home() {
   const chatEndRef                        = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/profiles", { headers: { "x-user-id": "demo-user" } })
-      .then((r) => r.json())
-      .then((list: { name: string; id: string }[]) => {
-        const jordan = list.find((p) => p.name === "Jordan");
-        if (jordan) return setProfileId(jordan.id);
-        return fetch("/api/profiles", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json", "x-user-id": "demo-user" },
-          body:    JSON.stringify({ name: "Jordan", relationship_type: "friend" }),
-        })
-          .then((r) => r.json())
-          .then((p: { id: string }) => setProfileId(p.id));
-      })
-      .catch(() => {});
+    const hdr = { "Content-Type": "application/json", "x-user-id": "demo-user" };
+    (async () => {
+      try {
+        const res = await fetch("/api/profiles", { headers: hdr });
+        const list = await res.json();
+        let real: Profile[] = Array.isArray(list) ? list : [];
+
+        // Ensure a real "Jordan" so the headline demo archives/learns for real.
+        if (!real.some((p) => p.name === "Jordan")) {
+          const created = await fetch("/api/profiles", {
+            method:  "POST",
+            headers: hdr,
+            body:    JSON.stringify({ name: "Jordan", relationship_type: "friend", avatar_emoji: "🙂" }),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+          if (created?.id) real = [created, ...real];
+        }
+
+        // Merge in any demo relationships not already backed by a real profile.
+        const names = new Set(real.map((p) => p.name));
+        const merged = [...real, ...DEMO_PROFILES.filter((d) => !names.has(d.name))];
+        setProfiles(merged.length ? merged : DEMO_PROFILES);
+      } catch {
+        setProfiles(DEMO_PROFILES);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -161,15 +194,34 @@ export default function Home() {
     });
   }, []);
 
+  function openChat(p: Profile) {
+    setActive(p);
+    setSelected(new Set());
+    setAnalysis(null);
+    setError(null);
+    setPanelOpen(false);
+    setFollowUps([]);
+    setView("chat");
+  }
+
+  function goHome() {
+    setView("home");
+    setPanelOpen(false);
+    setSelected(new Set());
+  }
+
   async function analyze() {
     const msgs = DEMO.filter((m) => selected.has(m.id));
     if (!msgs.length) return;
     setLoading(true);
     setError(null);
     try {
+      // Only archive/learn against a real (Supabase-backed) profile; seeded
+      // demo cards fall back to stateless analysis.
+      const realId = active && isUuid(active.id) ? active.id : null;
       const body: Record<string, unknown> = {
         messages: msgs.map((m) => ({ sender: m.sender, body: m.body })),
-        ...(profileId ? { profile_id: profileId, archive: true } : {}),
+        ...(realId ? { profile_id: realId, archive: true } : {}),
       };
       const res  = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
@@ -269,8 +321,100 @@ export default function Home() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
+  // Relationship library landing page (#8).
+  if (view === "home") {
+    return (
+      <div className="sr-root">
+        {/* Branding strip */}
+        <div style={{ marginBottom: 26, textAlign: "center" }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontSize: 26, fontWeight: 600, color: C.teal, letterSpacing: "-0.02em" }}>
+            ScreenRead
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>
+            by Miku · powered by Claude
+          </div>
+        </div>
+
+        <div className="sr-home">
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14, padding: "0 2px" }}>
+            <div style={{ fontFamily: "Fraunces, serif", fontSize: 21, fontWeight: 600, color: C.text }}>
+              Your relationships
+            </div>
+            <div style={{ fontSize: 12, color: C.muted }}>
+              {profiles.length} {profiles.length === 1 ? "person" : "people"}
+            </div>
+          </div>
+
+          <div className="sr-cards">
+            {profiles.map((p) => {
+              const initial = p.name.charAt(0).toUpperCase();
+              return (
+                <button key={p.id} className="sr-card" onClick={() => openChat(p)}>
+                  <div
+                    style={{
+                      width:          48,
+                      height:         48,
+                      borderRadius:   "50%",
+                      background:     `linear-gradient(135deg, ${C.teal} 0%, ${C.coral} 100%)`,
+                      display:        "flex",
+                      alignItems:     "center",
+                      justifyContent: "center",
+                      color:          "#fff",
+                      fontWeight:     700,
+                      fontSize:       20,
+                      flexShrink:     0,
+                    }}
+                  >
+                    {p.avatar_emoji || initial}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 600, fontSize: 15.5, color: C.text }}>{p.name}</span>
+                      {p.relationship_type && (
+                        <span style={{ fontSize: 10.5, fontWeight: 600, color: C.teal, background: `${C.teal}12`, padding: "2px 8px", borderRadius: 99, textTransform: "capitalize" }}>
+                          {p.relationship_type}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: C.muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.tagline ?? "Tap to read your conversation"}
+                    </div>
+                  </div>
+                  <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M1 1l6 6-6 6" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => openChat({ id: "demo-new", name: "New chat", relationship_type: null, avatar_emoji: "✦" })}
+            style={{
+              marginTop:    16,
+              padding:      "14px 18px",
+              borderRadius: 16,
+              border:       `1.5px dashed ${C.teal}55`,
+              background:   "transparent",
+              color:        C.teal,
+              fontSize:     14,
+              fontWeight:   600,
+              cursor:       "pointer",
+              fontFamily:   "Inter, sans-serif",
+            }}
+          >
+            + New relationship / import a screenshot
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const activeName    = active?.name ?? "Jordan";
+  const activeInitial = activeName.charAt(0).toUpperCase();
+
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 16px" }}>
+    <div className="sr-root">
 
       {/* Branding strip */}
       <div style={{ marginBottom: 22, textAlign: "center" }}>
@@ -283,13 +427,12 @@ export default function Home() {
       </div>
 
       {/* Phone + panel row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
+      <div className="sr-stage">
 
         {/* ── Phone shell ──────────────────────────────────────────────── */}
         <div
+          className="sr-phone"
           style={{
-            width:         375,
-            height:        720,
             background:    "#fff",
             borderRadius:  44,
             overflow:      "hidden",
@@ -297,7 +440,6 @@ export default function Home() {
             border:        "1px solid rgba(0,0,0,0.07)",
             display:       "flex",
             flexDirection: "column",
-            flexShrink:    0,
             position:      "relative",
           }}
         >
@@ -315,7 +457,7 @@ export default function Home() {
               flexShrink:   0,
             }}
           >
-            <button style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}>
+            <button onClick={goHome} title="Back to relationships" style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}>
               <svg width="10" height="17" viewBox="0 0 10 17" fill="none">
                 <path d="M9 1L1 8.5 9 16" stroke={C.teal} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -337,7 +479,7 @@ export default function Home() {
                   fontSize:       17,
                 }}
               >
-                J
+                {active?.avatar_emoji || activeInitial}
               </div>
               <div
                 style={{
@@ -354,7 +496,7 @@ export default function Home() {
             </div>
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: C.text, lineHeight: 1.2 }}>Jordan</div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: C.text, lineHeight: 1.2 }}>{activeName}</div>
               <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 500, marginTop: 1 }}>Active now</div>
             </div>
 
@@ -548,10 +690,8 @@ export default function Home() {
         {/* ── Analysis panel ───────────────────────────────────────────── */}
         {panelOpen && (
           <div
-            className="slide-in"
+            className="slide-in sr-panel"
             style={{
-              width:         360,
-              maxHeight:     720,
               overflowY:     "auto",
               background:    C.cream,
               borderRadius:  30,

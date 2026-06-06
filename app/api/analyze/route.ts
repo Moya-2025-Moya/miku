@@ -3,14 +3,14 @@ import { analyzeSchema } from "@/lib/schemas";
 import { getProfile } from "@/lib/services/profiles";
 import { archiveMessages } from "@/lib/services/archive";
 import { runAnalysis, runStatelessAnalysis } from "@/lib/services/analysis";
-import { errorResponse } from "@/lib/http";
+import { errorResponse, getUserId } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   try {
     const body = analyzeSchema.parse(await req.json());
 
     if (body.profile_id) {
-      const profile = await getProfile(body.profile_id);
+      const profile = await getProfile(body.profile_id, getUserId(req));
       if (!profile) {
         return NextResponse.json({ error: "Profile not found" }, { status: 404 });
       }

@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listProfiles, createProfile } from "@/lib/services/profiles";
-
-function userId(req: NextRequest) {
-  return req.headers.get("x-user-id") ?? "demo-user";
-}
+import { createProfileSchema } from "@/lib/schemas";
+import { errorResponse, getUserId } from "@/lib/http";
 
 export async function GET(req: NextRequest) {
   try {
-    return NextResponse.json(await listProfiles(userId(req)));
+    return NextResponse.json(await listProfiles(getUserId(req)));
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return errorResponse(e);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const profile = await createProfile(userId(req), await req.json());
+    const input = createProfileSchema.parse(await req.json());
+    const profile = await createProfile(getUserId(req), input);
     return NextResponse.json(profile, { status: 201 });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    return errorResponse(e);
   }
 }

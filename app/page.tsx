@@ -276,7 +276,7 @@ export default function Home() {
         setError(m); return;
       }
       const reader = res.body.getReader(); const dec = new TextDecoder();
-      let buffer = "", json = "", first = true; let final: AnalysisResult | null = null;
+      let buffer = "", json = "", final: AnalysisResult | null = null;
       for (;;) {
         const { done, value } = await reader.read(); if (done) break;
         buffer += dec.decode(value, { stream: true });
@@ -284,12 +284,20 @@ export default function Home() {
         for (const ev of events) {
           const line = ev.trim(); if (!line.startsWith("data:")) continue;
           const p = JSON.parse(line.slice(5).trim());
-          if (p.text) { if (first) { setLoading(false); first = false; } json += p.text; setAnalysis(parsePartialAnalysis(json)); }
-          else if (p.done && p.analysis) final = p.analysis as AnalysisResult;
-          else if (p.error) { setError(p.error); setAnalysis(null); }
+          if (p.text) {
+            json += p.text;
+          } else if (p.done && p.analysis) {
+            final = p.analysis as AnalysisResult;
+          } else if (p.error) {
+            setError(p.error); setAnalysis(null);
+          }
         }
       }
-      if (final) setAnalysis(final);
+      if (final) {
+        setAnalysis(final);
+      } else if (json) {
+        setAnalysis(parsePartialAnalysis(json));
+      }
     } catch {
       setError("Network hiccup. Check your connection and try again.");
       setAnalysis(null);
@@ -733,8 +741,8 @@ export default function Home() {
             </button>
           </div>
           <div style={{ display: "flex", padding: "0 12px" }}>
-            <button className={`sr-tab${tab === "read" ? " is-active" : ""}`} onClick={() => setTab("read")}><Icon name="spark" size={14} fill={tab === "read"} /> Read</button>
-            <button className={`sr-tab${tab === "memory" ? " is-active" : ""}`} onClick={() => setTab("memory")}><Icon name="memory" size={14} /> Memory · {active.patterns.length}</button>
+            <button className={`sr-tab${tab === "read" ? " is-active" : ""}`} onClick={() => { setTab("read"); setPanelOpen(true); }}><Icon name="spark" size={14} fill={tab === "read"} /> Read</button>
+            <button className={`sr-tab${tab === "memory" ? " is-active" : ""}`} onClick={() => { setTab("memory"); setPanelOpen(true); }}><Icon name="memory" size={14} /> Memory · {active.patterns.length}</button>
           </div>
         </div>
 
@@ -756,7 +764,7 @@ export default function Home() {
       </aside>
 
       {/* Mobile scrim */}
-      <div className="sr-scrim" onClick={() => setPanelOpen(false)} aria-hidden="true" />
+      <div className="sr-aside-backdrop" onClick={() => setPanelOpen(false)} aria-hidden="true" />
 
       {/* Share card */}
       {shareOpen && analysis && (
@@ -959,6 +967,7 @@ function ReadView(props: {
           )}
           <div style={{ display: "flex", gap: 8, background: C.canvas, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.line}` }}>
           <input
+            autoFocus
             value={props.chatInput}
             onChange={(e) => props.setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && props.sendFollowUp()}

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ScreenRead</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #ffffff;
+    --chat-bg:   #ffffff;
+    --out:       #d4f5c4;
+    --out-sel:   #b6eaa4;
+    --in:        #f2f2f7;
+    --in-sel:    #d8f0e8;
+    --text:      #000000;
+    --sub:       #8e8e93;
+    --line:      #e5e5ea;
+    --icon-bg:   #f2f2f7;
+    --teal:      #0f766e;
+    --teal-soft: #15938a;
+    --coral:     #e8896b;
+    --cream:     #fbf6ef;
+    --ink:       #1c1c1e;
+    --sage-line: #e7dccd;
+    --sage-sub:  #8a7d6f;
+    --shadow:    0 4px 20px rgba(0,0,0,.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { background: var(--bg); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+  /* ── App shell ── */
+  .app { display: flex; height: 100vh; width: 100vw; transition: all .5s cubic-bezier(.6,.05,.2,1); }
+  .app.split .chat-wrap { flex: 0 0 50%; max-width: 50%; }
+
+  /* ── Chat pane ── */
+  .chat-wrap { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); min-width: 0; transition: all .5s cubic-bezier(.6,.05,.2,1); }
+
+  /* ── Header (Zymix style) ── */
+  .chat-head {
+    background: var(--bg);
+    padding: 14px 16px 12px;
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--line);
+    z-index: 10; position: relative;
+    overflow: visible; /* allow Miku to peek above */
+    min-height: 60px;
+  }
+  .head-back {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--icon-bg);
+    display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+    color: var(--text);
+  }
+  .head-back svg { width: 18px; height: 18px; }
+  .head-name {
+    flex: 1; text-align: center; font-size: 16px; font-weight: 600; color: var(--text);
+    letter-spacing: -.2px;
+  }
+  .head-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .head-btn {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--icon-bg);
+    display: grid; place-items: center; cursor: pointer; color: var(--text);
+  }
+  .head-btn svg { width: 18px; height: 18px; }
+
+  /* ── Miku peek (replaces floating orb) ── */
+  .miku-peek {
+    position: absolute;
+    bottom: 6px;          /* paws rest just above the header bottom edge */
+    left: 50%;
+    transform: translateX(10px); /* nudge right of "Jordan" text */
+    width: 88px;
+    cursor: pointer;
+    z-index: 30;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
+    transition: transform .25s cubic-bezier(.34,1.5,.6,1), filter .2s;
+    user-select: none;
+  }
+  .miku-peek:hover {
+    transform: translateX(10px) translateY(-6px);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,.22));
+  }
+  .miku-peek.excited {
+    animation: mikunudge .5s cubic-bezier(.34,1.6,.5,1);
+  }
+  @keyframes mikunudge {
+    0%   { transform: translateX(10px) translateY(0) rotate(0deg); }
+    30%  { transform: translateX(10px) translateY(-10px) rotate(-6deg); }
+    60%  { transform: translateX(10px) translateY(-6px) rotate(4deg); }
+    100% { transform: translateX(10px) translateY(0) rotate(0deg); }
+  }
+  .miku-peek img {
+    width: 100%; display: block;
+    /* image has near-white bg so it blends with the white header */
+  }
+  /* tooltip on hover */
+  .miku-peek::after {
+    content: 'Ask Miku';
+    position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 11px; font-weight: 600;
+    padding: 4px 9px; border-radius: 20px; white-space: nowrap;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .miku-peek:hover::after { opacity: 1; }
+
+  /* ── Messages ── */
+  .messages {
+    flex: 1; overflow-y: auto; padding: 14px 16px 10px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .messages::-webkit-scrollbar { width: 0; }
+
+  .day-divider {
+    align-self: center; color: var(--sub); font-size: 12px;
+    padding: 4px 0; margin: 4px 0 8px; font-weight: 400;
+  }
+
+  /* Message row wraps bubble + avatar */
+  .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-row.out { flex-direction: row-reverse; }
+  .msg-row.in  { flex-direction: row; }
+
+  /* Avatar beside bubble */
+  .msg-av {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg,#f0916b,#e8696b);
+    display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700;
+    align-self: flex-end;
+  }
+  .msg-av.hide { visibility: hidden; }
+  /* outgoing avatar: user's own */
+  .msg-row.out .msg-av {
+    background: linear-gradient(135deg,#a78bfa,#7c3aed);
+  }
+
+  /* Bubble */
+  .msg {
+    max-width: 72%; padding: 9px 13px 7px; border-radius: 20px;
+    font-size: 15px; line-height: 1.4; color: var(--text);
+    position: relative; cursor: pointer; user-select: none;
+    transition: transform .12s ease, background .15s ease;
+    word-break: break-word;
+  }
+  .msg-row.in  .msg { background: var(--in);  border-bottom-left-radius: 6px; }
+  .msg-row.out .msg { background: var(--out); border-bottom-right-radius: 6px; }
+
+  /* selected state */
+  .msg-row.sel .msg { transform: scale(1.015); }
+  .msg-row.in.sel  .msg { background: var(--in-sel); outline: 2px solid var(--teal); }
+  .msg-row.out.sel .msg { background: var(--out-sel); outline: 2px solid var(--teal); }
+
+  /* checkmark on avatar */
+  .msg-av .chk-ring {
+    position: absolute; inset: -3px; border-radius: 50%;
+    border: 2.5px solid var(--teal); opacity: 0;
+    transition: opacity .18s, transform .18s cubic-bezier(.34,1.7,.5,1);
+    transform: scale(.7);
+  }
+  .msg-row.sel .msg-av .chk-ring { opacity: 1; transform: scale(1); }
+  .msg-av { position: relative; }
+
+  .msg .meta {
+    font-size: 11px; color: var(--sub); float: right;
+    margin: 5px 0 -1px 10px; display: flex; align-items: center; gap: 3px;
+  }
+
+  /* ── Composer (Zymix style) ── */
+  .composer {
+    background: var(--bg); padding: 10px 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .comp-plus {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--icon-bg);
+    display: grid; place-items: center; flex-shrink: 0; cursor: pointer; color: var(--text);
+  }
+  .comp-plus svg { width: 16px; height: 16px; }
+  .comp-box {
+    flex: 1; background: var(--icon-bg); border-radius: 20px;
+    padding: 9px 14px; font-size: 15px; color: var(--sub);
+    font-family: inherit;
+  }
+  .comp-icon { flex-shrink: 0; cursor: pointer; color: var(--sub); }
+  .comp-icon svg { width: 22px; height: 22px; display: block; }
+
+  /* ── Drag token ── */
+  .carry {
+    position: fixed; z-index: 80; display: none; align-items: center; gap: 10px;
+    background: var(--ink); color: #fff; padding: 10px 16px 10px 12px; border-radius: 40px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.22); cursor: grab; font-size: 13px; font-weight: 600;
+    animation: pop .22s cubic-bezier(.34,1.6,.5,1); user-select: none;
+  }
+  .carry.show { display: flex; }
+  .carry:active { cursor: grabbing; }
+  .carry .cnt { background: var(--coral); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .carry .sub-label { opacity: .5; font-weight: 400; font-size: 12px; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .ripple {
+    position: fixed; border: 2.5px solid var(--teal); border-radius: 50%;
+    pointer-events: none; z-index: 69; animation: ripple .7s ease-out forwards;
+  }
+  @keyframes ripple { from{opacity:.6} to{width:200px;height:200px;margin:-100px 0 0 -100px;opacity:0} }
+
+  .nudge {
+    position: fixed; bottom: 164px; right: 18px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px 14px; font-size: 13px; color: var(--ink); line-height: 1.45;
+    max-width: 195px; box-shadow: var(--shadow); z-index: 68;
+    animation: rise .6s .9s both;
+  }
+  .app.split .nudge { display: none; }
+  .nudge b { color: var(--teal); }
+  .nudge::after {
+    content: ''; position: absolute; bottom: -7px; right: 32px;
+    width: 13px; height: 13px; background: #fff;
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    transform: rotate(45deg);
+  }
+
+  /* ── Miku panel ── */
+  .panel {
+    position: fixed; top: 0; right: 0; height: 100vh; width: 50%;
+    background: var(--cream); transform: translateX(105%);
+    transition: transform .5s cubic-bezier(.6,.05,.2,1); z-index: 75;
+    display: flex; flex-direction: column;
+    box-shadow: -20px 0 60px rgba(20,40,38,.14); border-left: 1px solid var(--sage-line);
+  }
+  .panel.open { transform: translateX(0); }
+  .panel-bg {
+    position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(232,137,107,.18), transparent 44%),
+      radial-gradient(circle at 8% 92%, rgba(21,147,138,.12), transparent 46%);
+  }
+  .p-head { padding: 20px 22px 14px; display: flex; align-items: center; gap: 12px; position: relative; z-index: 2; }
+  .p-orb {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: radial-gradient(circle at 34% 30%, #4fcabd, var(--teal) 60%, #0b5a54);
+    box-shadow: 0 6px 16px rgba(15,118,110,.4); display: grid; place-items: center;
+    animation: breathe 4.2s ease-in-out infinite;
+  }
+  .p-orb .face { gap: 6px; } .p-orb .eye { width: 5px; height: 7px; }
+  .p-head .who h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px; color: var(--ink); line-height: 1; }
+  .p-head .who p  { font-size: 12px; color: var(--sage-sub); margin-top: 3px; }
+  .p-close { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--sage-line); background: rgba(255,255,255,.5); cursor: pointer; color: var(--sage-sub); font-size: 15px; display: grid; place-items: center; margin-left: auto; }
+  .p-close:hover { background: #fff; }
+  .p-body { flex: 1; overflow-y: auto; padding: 4px 22px 16px; position: relative; z-index: 2; }
+  .p-body::-webkit-scrollbar { width: 5px; }
+  .p-body::-webkit-scrollbar-thumb { background: var(--sage-line); border-radius: 3px; }
+
+  .quoted { background: rgba(255,255,255,.6); border: 1px solid var(--sage-line); border-left: 3px solid var(--coral); border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--sage-sub); }
+  .quoted .qh { font-weight: 700; color: var(--ink); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px; }
+  .quoted .qm { margin: 3px 0; line-height: 1.4; }
+  .quoted .qm b { color: var(--ink); font-weight: 600; }
+  .pattern { background: rgba(15,118,110,.08); border: 1px solid rgba(15,118,110,.2); border-radius: 10px; padding: 10px 13px; margin-bottom: 14px; font-size: 12.5px; color: var(--teal); line-height: 1.45; }
+  .pattern b { font-weight: 700; }
+  .card { background: rgba(255,255,255,.72); border: 1px solid var(--sage-line); border-radius: 16px; padding: 15px 17px; margin-bottom: 13px; opacity: 0; transform: translateY(12px); box-shadow: var(--shadow); }
+  .card.in { animation: rise .45s forwards; }
+  .card:nth-child(3){animation-delay:.1s} .card:nth-child(4){animation-delay:.22s} .card:nth-child(5){animation-delay:.34s} .card:nth-child(6){animation-delay:.46s}
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .card h3 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; }
+  .tag.teal  { background: rgba(15,118,110,.12); color: var(--teal); }
+  .tag.coral { background: rgba(232,137,107,.16); color: #c45c3d; }
+  .card p { font-size: 13.5px; line-height: 1.55; color: #4a4038; }
+  .rc-row { display: flex; gap: 10px; margin-top: 9px; font-size: 13px; line-height: 1.45; }
+  .rc-row .lab { flex: 0 0 68px; font-weight: 700; font-size: 10px; letter-spacing: .4px; text-transform: uppercase; padding-top: 2px; }
+  .rc-row.fact .lab { color: var(--teal); } .rc-row.assume .lab { color: #c45c3d; }
+  .rc-row .val { color: #4a4038; }
+  .drafts .opt { border: 1px solid var(--sage-line); background: #fff; border-radius: 12px; padding: 11px 13px; margin-top: 9px; cursor: pointer; transition: .18s; }
+  .drafts .opt:hover { border-color: var(--teal); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,118,110,.1); }
+  .drafts .opt .tone { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--teal); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .drafts .opt .tone .use { color: var(--sage-sub); opacity: 0; transition: .2s; }
+  .drafts .opt:hover .tone .use { opacity: 1; }
+  .drafts .opt .txt { font-size: 13px; line-height: 1.45; color: #3a322b; }
+  .verdict-pill { background: var(--ink); color: #fff; border-radius: 12px; padding: 13px 15px; font-size: 13.5px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: .18s; margin-top: 10px; }
+  .verdict-pill:hover { opacity: .86; }
+  .verdict-pill .conf { font-size: 10px; font-weight: 400; opacity: .55; display: block; margin-top: 5px; }
+  .verdict-copy { font-size: 11px; color: var(--sage-sub); text-align: center; margin-top: 7px; }
+  .verdict-copy b { color: var(--teal); }
+  .safety { font-size: 11px; color: var(--sage-sub); text-align: center; padding: 8px 16px 4px; line-height: 1.4; }
+  .safety b { color: var(--teal); }
+
+  /* ── Loading / error states ── */
+  .miku-loading {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 48px 20px; color: var(--sage-sub); font-size: 13px;
+  }
+  .miku-dots { display: inline-flex; gap: 6px; }
+  .miku-dots i {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--teal);
+    animation: td 1.2s infinite;
+  }
+  .miku-dots i:nth-child(2){animation-delay:.2s} .miku-dots i:nth-child(3){animation-delay:.4s}
+  .miku-error {
+    background: #fff3f3; border: 1px solid #f5c6c6; border-radius: 12px;
+    padding: 16px 18px; margin: 12px 0; font-size: 13px; color: #b91c1c; line-height: 1.5;
+  }
+  .miku-error code { font-size: 11px; background: rgba(0,0,0,.06); padding: 1px 4px; border-radius: 3px; }
+
+  .chatlog { margin-top: 6px; }
+  .bubble { max-width: 86%; padding: 10px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; margin-bottom: 9px; }
+  .bubble.miku { background: rgba(255,255,255,.8); border: 1px solid var(--sage-line); border-top-left-radius: 4px; color: #3a322b; }
+  .bubble.me   { background: var(--teal); color: #fff; margin-left: auto; border-top-right-radius: 4px; }
+  .typing { display: inline-flex; gap: 4px; padding: 3px 0; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--sage-sub); animation: td 1.2s infinite; }
+  .typing i:nth-child(2){animation-delay:.2s} .typing i:nth-child(3){animation-delay:.4s}
+  @keyframes td { 0%,60%,100%{opacity:.3;transform:translateY(0)} 30%{opacity:1;transform:translateY(-4px)} }
+  .p-foot { padding: 12px 20px 18px; position: relative; z-index: 2; border-top: 1px solid var(--sage-line); background: rgba(251,246,239,.9); }
+  .p-input { display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--sage-line); border-radius: 24px; padding: 6px 6px 6px 16px; }
+  .p-input input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 14px; color: var(--ink); background: none; }
+  .p-input button { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--teal); color: #fff; cursor: pointer; flex-shrink: 0; display: grid; place-items: center; }
+  .p-input button:hover { background: var(--teal-soft); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ── Chat pane ── -->
+  <div class="chat-wrap">
+
+    <!-- Zymix-style header -->
+    <header class="chat-head">
+      <div class="head-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </div>
+      <div class="head-name">Jordan</div>
+      <!-- Miku peeks above the header bar, next to Jordan's name -->
+      <div class="miku-peek" id="mikuPeek" title="Ask Miku">
+        <img src="miku.png" alt="Miku" id="mikuImg"
+             onerror="this.style.display='none';document.getElementById('mikuFallback').style.display='flex'" />
+        <!-- fallback orb if image not found yet -->
+        <div id="mikuFallback" style="display:none;width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#4fcabd,#0f766e 55%,#0b5a54);box-shadow:0 8px 24px rgba(15,118,110,.45);align-items:center;justify-content:center;gap:9px;">
+          <div style="width:7px;height:10px;background:#fff;border-radius:50%;animation:blink 5.5s infinite"></div>
+          <div style="width:7px;height:10px;background:#fff;border-radius:50%;animation:blink 5.5s infinite"></div>
+        </div>
+      </div>
+      <div class="head-actions">
+        <div class="head-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0121 8.72v6.56a1 1 0 01-1.447.894L15 14v-4z"/><rect x="3" y="8" width="12" height="8" rx="2"/></svg>
+        </div>
+        <div class="head-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.2 2 2 0 012 .01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <div class="messages" id="messages"></div>
+
+    <!-- Zymix-style composer -->
+    <div class="composer">
+      <div class="comp-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="comp-box">Message</div>
+      <div class="comp-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="comp-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="comp-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Drag token (drag up to header) ── -->
+  <div class="carry" id="carry" draggable="true">
+    <span class="cnt" id="carryCnt">1</span>
+    <span>Ask Miku <span class="sub-label">— drag to Miku ↑</span></span>
+  </div>
+
+  <!-- ── Miku analysis panel ── -->
+  <div class="panel" id="panel">
+    <div class="panel-bg"></div>
+    <div class="p-head">
+      <div class="p-orb" style="background:none;box-shadow:none;overflow:visible;width:48px;height:48px;">
+        <img src="miku.png" alt="Miku" style="width:64px;height:64px;object-fit:contain;margin-top:-16px;margin-left:-8px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))"
+             onerror="this.parentElement.style.cssText='width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#4fcabd,#0f766e 60%,#0b5a54);box-shadow:0 6px 16px rgba(15,118,110,.4);display:grid;place-items:center;animation:breathe 4.2s ease-in-out infinite';this.remove()" />
+      </div>
+      <div class="who"><h1>Miku</h1><p>reading between the lines…</p></div>
+      <button class="p-close" id="pclose">✕</button>
+    </div>
+    <div class="p-body" id="pbody"></div>
+    <div class="p-foot">
+      <div class="p-input">
+        <input id="pinput" placeholder="Ask Miku anything…" />
+        <button id="psend">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 11l18-8-8 18-2-7-8-3z" fill="#fff"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── Conversation ── */
+const CONVO = [
+  { who:'in',  t:'22:40', text:'hey so are we still on for saturday or' },
+  { who:'out', t:'22:41', text:'yeah!! looking forward to it 😊' },
+  { who:'in',  t:'23:02', text:'cool cool' },
+  { who:'in',  t:'23:03', text:'actually might be kinda busy that day, can i let u know closer to the time' },
+  { who:'out', t:'23:05', text:'oh totally no rush! whatever works 🙂' },
+  { who:'in',  t:'23:14', text:"yeah no it's fine, don't worry about it" },
+];
+
+const messagesEl = document.getElementById('messages');
+const carry      = document.getElementById('carry');
+const carryCnt   = document.getElementById('carryCnt');
+const mikuPeek   = document.getElementById('mikuPeek');
+const panel      = document.getElementById('panel');
+const app        = document.getElementById('app');
+let selected     = new Set();
+
+/* render messages with avatars */
+messagesEl.innerHTML = '<div class="day-divider">Today</div>';
+CONVO.forEach((m, i) => {
+  const next  = CONVO[i + 1];
+  const isLast = !next || next.who !== m.who; // show avatar only on last in a cluster
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${m.who}`;
+  row.dataset.i = i;
+
+  const avHTML = m.who === 'in'
+    ? `<div class="msg-av${isLast ? '' : ' hide'}"><div class="chk-ring"></div>J</div>`
+    : `<div class="msg-av${isLast ? '' : ' hide'}"><div class="chk-ring"></div>Me</div>`;
+
+  const tick = m.who === 'out'
+    ? `<svg width="14" height="9" viewBox="0 0 16 10" fill="none"><path d="M1 5l3.5 3.5L12.5 1" stroke="#5db870" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5l3.5 3.5L16 1" stroke="#5db870" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
+
+  const bubbleHTML = `<div class="msg">${m.text}<span class="meta">${m.t} ${tick}</span></div>`;
+
+  row.innerHTML = m.who === 'in'
+    ? avHTML + bubbleHTML
+    : bubbleHTML + avHTML;
+
+  row.addEventListener('click', () => toggleRow(i, row));
+  messagesEl.appendChild(row);
+});
+
+function toggleRow(i, row) {
+  if (selected.has(i)) { selected.delete(i); row.classList.remove('sel'); }
+  else                  { selected.add(i);    row.classList.add('sel'); }
+  if (selected.size > 0) {
+    carry.classList.add('show');
+    carryCnt.textContent = selected.size;
+    positionCarry();
+    /* make Miku bounce to signal she's ready */
+    mikuPeek.classList.remove('excited');
+    void mikuPeek.offsetWidth; // force reflow
+    mikuPeek.classList.add('excited');
+  } else {
+    carry.classList.remove('show');
+  }
+}
+
+function positionCarry() {
+  carry.style.left = (window.innerWidth - 215) + 'px';
+  carry.style.top  = (window.innerHeight - 158) + 'px';
+}
+positionCarry();
+window.addEventListener('resize', positionCarry);
+
+/* ── Drag to Miku peek in header ── */
+carry.addEventListener('dragstart', e => e.dataTransfer.setData('text', 'miku'));
+['dragenter','dragover'].forEach(ev =>
+  mikuPeek.addEventListener(ev, e => {
+    e.preventDefault();
+    mikuPeek.style.transform = 'translateX(10px) translateY(-8px) scale(1.12)';
+    mikuPeek.style.filter = 'drop-shadow(0 14px 28px rgba(0,0,0,.28))';
+  })
+);
+mikuPeek.addEventListener('dragleave', () => {
+  mikuPeek.style.transform = '';
+  mikuPeek.style.filter = '';
+});
+mikuPeek.addEventListener('drop', e => {
+  e.preventDefault();
+  mikuPeek.style.transform = '';
+  mikuPeek.style.filter = '';
+  const r = mikuPeek.getBoundingClientRect();
+  openMiku(r.left + r.width / 2, r.top + r.height / 2);
+});
+/* click Miku to open (main trigger) */
+mikuPeek.addEventListener('click', () => {
+  if (selected.size > 0) {
+    const r = mikuPeek.getBoundingClientRect();
+    openMiku(r.left + r.width / 2, r.top + r.height / 2);
+  }
+});
+
+function openMiku(x, y) {
+  carry.classList.remove('show');
+  /* ripple from Miku's position */
+  const rip = document.createElement('div');
+  rip.className = 'ripple';
+  rip.style.cssText = `left:${x}px;top:${y}px;width:10px;height:10px;margin:-5px 0 0 -5px`;
+  document.body.appendChild(rip);
+  setTimeout(() => rip.remove(), 700);
+  /* happy bounce before panel opens */
+  mikuPeek.classList.remove('excited');
+  void mikuPeek.offsetWidth;
+  mikuPeek.classList.add('excited');
+  setTimeout(() => {
+    app.classList.add('split');
+    panel.classList.add('open');
+    renderAnalysis();
+  }, 340);
+}
+
+document.getElementById('pclose').addEventListener('click', () => {
+  app.classList.remove('split');
+  panel.classList.remove('open');
+  selected.clear();
+  document.querySelectorAll('.msg-row.sel').forEach(r => r.classList.remove('sel'));
+  carry.classList.remove('show');
+});
+
+/* ── Analysis ── */
+const pbody = document.getElementById('pbody');
+const API   = 'http://127.0.0.1:8000';  // local FastAPI server
+let   lastAnalysis = null;               // cache for follow-up chat context
+
+function renderAnalysis() {
+  const picked = [...selected].sort((a,b) => a-b).map(i => CONVO[i]);
+  const quote  = picked.map(m =>
+    `<div class="qm"><b>${m.who === 'in' ? 'Jordan' : 'You'}:</b> ${m.text}</div>`
+  ).join('');
+
+  /* Loading skeleton */
+  pbody.innerHTML = `
+    <div class="quoted"><div class="qh">What you shared</div>${quote}</div>
+    <div class="miku-loading">
+      <div class="miku-dots"><i></i><i></i><i></i></div>
+      <span>Miku is reading between the lines…</span>
+    </div>
+  `;
+
+  const indices = [...selected].sort((a,b) => a-b);
+
+  fetch(`${API}/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: CONVO, selected_indices: indices }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error(`Server ${r.status}`);
+    return r.json();
+  })
+  .then(data => {
+    lastAnalysis = JSON.stringify(data);
+    renderCards(data, quote);
+  })
+  .catch(err => {
+    pbody.innerHTML = `
+      <div class="quoted"><div class="qh">What you shared</div>${quote}</div>
+      <div class="miku-error">
+        ⚠️ Couldn't reach Miku.<br>
+        <small>Make sure <code>server.py</code> is running on port 8000.<br>${err.message}</small>
+      </div>
+      <div class="chatlog" id="chatlog"></div>
+    `;
+  });
+}
+
+function renderCards(data, quote) {
+  const confTag = `<span class="tag teal">${data.confidence || 'medium'} confidence</span>`;
+  const verdictText = data.shareable_verdict || '';
+  const rc = data.reality_check || {};
+  const opts = (data.response_options || []).map(o =>
+    `<div class="opt" data-tone="${o.tone}" data-txt="${encodeURIComponent(o.text)}">
+       <div class="tone"><span>${o.tone}</span><span class="use">use this →</span></div>
+       <div class="txt">"${o.text}"</div>
+     </div>`
+  ).join('');
+
+  pbody.innerHTML = `
+    <div class="quoted"><div class="qh">What you shared</div>${quote}</div>
+    ${data.pattern ? `<div class="pattern"><b>Pattern · Jordan</b> — ${data.pattern}</div>` : ''}
+    <div class="card">
+      <h3>🫧 Vibe Read</h3>
+      <p>${data.vibe_read || ''}</p>
+    </div>
+    <div class="card">
+      <h3>🧭 Reality Check <span class="tag teal">fact vs. story</span></h3>
+      <div class="rc-row fact"><div class="lab">Facts</div><div class="val">${rc.facts || ''}</div></div>
+      <div class="rc-row assume"><div class="lab">Your story</div><div class="val">${rc.story || ''}</div></div>
+      <p style="margin-top:11px">${rc.verdict || ''}</p>
+    </div>
+    <div class="card drafts">
+      <h3>✍️ Response Options <span class="tag coral">pick a direction</span></h3>
+      ${opts}
+    </div>
+    <div class="card">
+      <h3>📣 Shareable Verdict ${confTag}</h3>
+      <div class="verdict-pill" id="verdictPill">
+        ${verdictText}
+        <span class="conf">ScreenRead · ${data.confidence || 'medium'} confidence · tap to copy</span>
+      </div>
+      <div class="verdict-copy" id="verdictCopy">Screenshot &amp; send to a friend, or <b>tap to copy</b></div>
+    </div>
+    <div class="safety"><b>Miku is a reflection tool, not a diagnosis.</b> It reads <i>your</i> interpretation — Jordan's actual intent is theirs to know.</div>
+    <div class="chatlog" id="chatlog"></div>
+  `;
+
+  requestAnimationFrame(() => pbody.querySelectorAll('.card').forEach(c => c.classList.add('in')));
+
+  pbody.querySelectorAll('.opt').forEach(o => {
+    o.addEventListener('click', () => {
+      const tone = o.dataset.tone;
+      const txt  = decodeURIComponent(o.dataset.txt);
+      mikuSay(`Nice — the <b>${tone}</b> reply keeps things light without closing the door. Want me to tweak the wording?`);
+      navigator.clipboard.writeText(txt).catch(() => {});
+    });
+  });
+
+  const vp = document.getElementById('verdictPill');
+  if (vp) vp.addEventListener('click', () => {
+    navigator.clipboard.writeText(verdictText).catch(() => {});
+    document.getElementById('verdictCopy').innerHTML = '<b style="color:var(--teal)">Copied ✓</b>';
+    setTimeout(() => { const el = document.getElementById('verdictCopy'); if (el) el.innerHTML = 'Screenshot &amp; send to a friend, or <b>tap to copy</b>'; }, 2200);
+  });
+}
+
+/* ── Follow-up chat ── */
+function mikuSay(html) {
+  const log = document.getElementById('chatlog');
+  if (!log) return;
+  const t   = document.createElement('div');
+  t.className = 'bubble miku';
+  t.innerHTML = '<div class="typing"><i></i><i></i><i></i></div>';
+  log.appendChild(t);
+  pbody.scrollTop = pbody.scrollHeight;
+  /* html already resolved — show immediately (used for opt-click messages)
+     real AI replies call mikuSayAsync instead */
+  setTimeout(() => { t.innerHTML = html; pbody.scrollTop = pbody.scrollHeight; }, 400);
+}
+
+async function mikuSayAsync(question) {
+  const log = document.getElementById('chatlog');
+  if (!log) return;
+  const t = document.createElement('div');
+  t.className = 'bubble miku';
+  t.innerHTML = '<div class="typing"><i></i><i></i><i></i></div>';
+  log.appendChild(t);
+  pbody.scrollTop = pbody.scrollHeight;
+
+  try {
+    const resp = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, prior_analysis: lastAnalysis }),
+    });
+    const data = await resp.json();
+    t.innerHTML = data.reply || 'I'm here — say more?';
+  } catch {
+    t.innerHTML = 'Having trouble connecting right now. <i>Is the server running?</i>';
+  }
+  pbody.scrollTop = pbody.scrollHeight;
+}
+
+function meSay(text) {
+  const log = document.getElementById('chatlog');
+  if (!log) return;
+  const b   = document.createElement('div');
+  b.className = 'bubble me'; b.textContent = text;
+  log.appendChild(b); pbody.scrollTop = pbody.scrollHeight;
+}
+
+const pinput = document.getElementById('pinput');
+async function send() {
+  const v = pinput.value.trim(); if (!v) return;
+  meSay(v); pinput.value = '';
+  await mikuSayAsync(v);
+}
+document.getElementById('psend').addEventListener('click', send);
+pinput.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+</script>
+</body>
+</html>

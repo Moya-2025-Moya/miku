@@ -205,6 +205,44 @@ function avatarBg(id: string): string {
   return map[id] ?? "linear-gradient(135deg,#0f766e,#e07a59)";
 }
 
+// ─── Add-to-home-screen hint (mobile web only) ─────────────────────────────────
+
+function InstallHint() {
+  const [show, setShow] = useState(false);
+  const [ios, setIos] = useState(false);
+  useEffect(() => {
+    try {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        // @ts-expect-error iOS Safari only
+        window.navigator.standalone === true;
+      const mobile = window.matchMedia("(max-width: 980px)").matches;
+      const dismissed = localStorage.getItem("miku-install-hint") === "1";
+      setIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
+      if (mobile && !standalone && !dismissed) setShow(true);
+    } catch {}
+  }, []);
+  if (!show) return null;
+  const dismiss = () => {
+    try { localStorage.setItem("miku-install-hint", "1"); } catch {}
+    setShow(false);
+  };
+  return (
+    <div style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 200, background: C.ink, color: "#fff", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 12px 34px rgba(0,0,0,0.32)" }}>
+      <img src={MIKU} alt="" width={38} height={38} style={{ width: 38, height: 38, borderRadius: 11, objectFit: "cover", objectPosition: "center 30%", background: "#fff", flexShrink: 0 }} />
+      <div style={{ flex: 1, fontSize: 12.5, lineHeight: 1.5 }}>
+        <strong>Add Miku to your home screen</strong>
+        <div style={{ color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
+          {ios
+            ? <>Tap the <b style={{ color: "#fff" }}>Share</b> button below, then <b style={{ color: "#fff" }}>Add to Home Screen</b>.</>
+            : <>Open the browser <b style={{ color: "#fff" }}>⋮</b> menu, then <b style={{ color: "#fff" }}>Install app</b> / <b style={{ color: "#fff" }}>Add to Home screen</b>.</>}
+        </div>
+      </div>
+      <button onClick={dismiss} aria-label="Dismiss" style={{ background: "rgba(255,255,255,0.16)", border: "none", color: "#fff", borderRadius: 9, width: 28, height: 28, fontSize: 17, lineHeight: 1, cursor: "pointer", flexShrink: 0 }}>×</button>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -324,6 +362,7 @@ export default function Home() {
 
   return (
     <div className="sr-app" data-mview={mview} data-panel={panelOpen ? "open" : "closed"}>
+      <InstallHint />
 
       {/* ── Left: conversation list ──────────────────────────────────────── */}
       <aside className="sr-sidebar">

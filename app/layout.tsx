@@ -1,9 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Miku",
   description: "Miku reads the subtext in your conversations.",
+  // Served from public/ (NOT app/icon.png — the file-based metadata convention
+  // breaks Next's route loader on this project path which contains a "'").
+  icons: { icon: "/icon.png", apple: "/icon.png" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Miku", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f766e",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

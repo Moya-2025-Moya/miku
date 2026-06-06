@@ -2,13 +2,12 @@
 
 body {
   font-family: "Inter", sans-serif;
-  background: #f0f0f0;
+  background: linear-gradient(160deg, #f8f4ef 0%, #ede8df 100%);
+  background-attachment: fixed;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 24px 16px;
 }
+
+/* ─── Animations ──────────────────────────────────────────────────────────── */
 
 @keyframes slideInRight {
   from { transform: translateX(100%); opacity: 0; }
@@ -16,7 +15,7 @@ body {
 }
 
 @keyframes fadeUp {
-  from { transform: translateY(12px); opacity: 0; }
+  from { transform: translateY(10px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
 
@@ -25,20 +24,31 @@ body {
   50%       { transform: scale(1.06); }
 }
 
-@keyframes ripple {
-  0%   { transform: scale(0.8); opacity: 0.6; }
-  100% { transform: scale(2.4); opacity: 0; }
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0   rgba(15,118,110,0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(15,118,110,0);   }
+  100% { box-shadow: 0 0 0 0   rgba(15,118,110,0);    }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.slide-in   { animation: slideInRight 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.fade-up    { animation: fadeUp 0.28s ease both; }
-.breathe    { animation: breathe 3s ease-in-out infinite; }
-.spin       { animation: spin 0.8s linear infinite; }
+@keyframes checkPop {
+  0%   { transform: scale(0);   opacity: 0; }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1);   opacity: 1; }
+}
 
-.card-stagger > *:nth-child(1) { animation-delay: 0.04s; }
-.card-stagger > *:nth-child(2) { animation-delay: 0.10s; }
-.card-stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.slide-in  { animation: slideInRight 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.fade-up   { animation: fadeUp 0.28s ease both; }
+.breathe   { animation: breathe 3s ease-in-out infinite; }
+.pulse     { animation: pulseRing 1.4s ease-out infinite; }
+.spin      { animation: spin 0.75s linear infinite; }
+.check-pop { animation: checkPop 0.2s ease both; }
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 99px; }

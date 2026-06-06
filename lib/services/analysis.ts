@@ -74,7 +74,9 @@ async function callClaude(userMessage: string) {
     max_tokens: 16000,
     thinking: { type: "adaptive" },
     output_config: {
-      effort: process.env.ANALYSIS_EFFORT ?? "high",
+      // "medium" is the demo sweet spot: ~12s EN / ~16s ZH with quality on par
+      // with "high" (which ran ~18s/~42s). Override via ANALYSIS_EFFORT.
+      effort: process.env.ANALYSIS_EFFORT ?? "medium",
       format: { type: "json_schema", schema: ANALYSIS_JSON_SCHEMA },
     },
     system: [

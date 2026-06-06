@@ -199,20 +199,50 @@ export default function Home() {
     setFollowUps(updated);
     setChatLoading(true);
     try {
-      const res  = await fetch("/api/chat", {
+      const res = await fetch("/api/chat", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
           messages:         updated.map((m) => ({ role: m.role, content: m.text })),
           analysis_context: analysis,
+          stream:           true,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setFollowUps((prev) => [...prev, { role: "assistant", text: data.error ?? "Something went wrong. Please try again." }]);
+      if (!res.ok || !res.body) {
+        let msg = "Something went wrong. Please try again.";
+        try { msg = (await res.json()).error ?? msg; } catch {}
+        setFollowUps((prev) => [...prev, { role: "assistant", text: msg }]);
         return;
       }
-      setFollowUps((prev) => [...prev, { role: "assistant", text: data.reply ?? "No response received." }]);
+
+      // Stream the reply into a single assistant bubble as tokens arrive.
+      setFollowUps((prev) => [...prev, { role: "assistant", text: "" }]);
+      const setLast = (text: string) =>
+        setFollowUps((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", text };
+          return copy;
+        });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let acc = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const event of events) {
+          const line = event.trim();
+          if (!line.startsWith("data:")) continue;
+          const payload = JSON.parse(line.slice(5).trim());
+          if (payload.text) { acc += payload.text; setLast(acc); }
+          else if (payload.error && !acc) setLast("Something went wrong. Please try again.");
+        }
+      }
+      if (!acc) setLast("No response received.");
     } catch {
       setFollowUps((prev) => [...prev, { role: "assistant", text: "Network error. Please try again." }]);
     } finally {

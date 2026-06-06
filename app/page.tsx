@@ -883,7 +883,10 @@ function ReadView(props: {
   );
 
   return (
-    <div style={{ padding: "14px 14px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+      {/* Scrollable analysis content */}
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 14 }}>
+        <div style={{ padding: "14px 14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
       <Card delay={0.02}>
         <Label icon="eye" text="Vibe read" color={C.teal} />
         <p style={{ fontFamily: "Fraunces, serif", fontSize: 14.5, lineHeight: 1.6, color: C.ink, margin: 0 }}>{analysis.vibe_read || <span className="skeleton" style={{ display: "inline-block", width: "90%", height: 14 }} />}</p>
@@ -938,19 +941,23 @@ function ReadView(props: {
         </div>
       </div>
 
-      {/* Follow-up */}
-      <Card delay={0.18}>
-        <Label icon="spark" text="Ask a follow-up" color={C.ink2} />
-        {props.followUps.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 10 }}>
-            {props.followUps.map((m, i) => (
-              <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%", background: m.role === "user" ? C.teal : C.canvas, color: m.role === "user" ? "#fff" : C.ink, borderRadius: m.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px", padding: "8px 12px", fontSize: 13, lineHeight: 1.5 }}>{m.text || "…"}</div>
-            ))}
-            {props.chatLoading && <div style={{ alignSelf: "flex-start", color: C.ink3, padding: "4px 10px", fontSize: 18 }}>···</div>}
-            <div ref={props.chatEndRef} />
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 8, background: C.canvas, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.line}` }}>
+      </div>
+      </div>
+
+      {/* Fixed follow-up section at bottom */}
+      <div style={{ padding: "14px 14px", borderTop: `1px solid ${C.line}`, background: C.surface, flexShrink: 0 }}>
+        <Card>
+          <Label icon="spark" text="Ask a follow-up" color={C.ink2} />
+          {props.followUps.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 10, maxHeight: 200, overflowY: "auto" }}>
+              {props.followUps.map((m, i) => (
+                <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%", background: m.role === "user" ? C.teal : C.canvas, color: m.role === "user" ? "#fff" : C.ink, borderRadius: m.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px", padding: "8px 12px", fontSize: 13, lineHeight: 1.5 }}>{m.text || "…"}</div>
+              ))}
+              {props.chatLoading && <div style={{ alignSelf: "flex-start", color: C.ink3, padding: "4px 10px", fontSize: 18 }}>···</div>}
+              <div ref={props.chatEndRef} />
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, background: C.canvas, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.line}` }}>
           <input
             value={props.chatInput}
             onChange={(e) => props.setChatInput(e.target.value)}
@@ -965,6 +972,7 @@ function ReadView(props: {
           </button>
         </div>
       </Card>
+    </div>
     </div>
   );
 }

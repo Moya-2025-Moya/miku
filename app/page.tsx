@@ -629,7 +629,7 @@ export default function Home() {
       <main className="sr-chat">
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: `1px solid ${C.line}`, background: C.surface, gap: 11, flexShrink: 0 }}>
-          <button className="sr-back sr-iconbtn" onClick={() => { setMview("list"); setPanelOpen(false); }} aria-label="Back to people" style={{ width: 30, height: 34, color: C.teal }}>
+          <button className="sr-back sr-iconbtn" onClick={() => { setMview("list"); setPanelOpen(false); }} aria-label="Back to people" style={{ color: C.teal, marginLeft: -8 }}>
             <Icon name="back" size={20} />
           </button>
           <div style={{ width: 40, height: 40, borderRadius: "50%", background: avatarBg(active), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 17, flexShrink: 0 }}>
@@ -639,13 +639,13 @@ export default function Home() {
             <div style={{ fontWeight: 600, fontSize: 15.5, color: C.ink, lineHeight: 1.15 }}>{active.name}</div>
             <div style={{ fontSize: 11.5, color: C.ink3, marginTop: 1 }}>{active.relationship} · {active.patterns.length} patterns learned</div>
           </div>
-          <button className="sr-mem-btn sr-iconbtn" onClick={() => { setTab("memory"); setPanelOpen(true); }} aria-label="Open Miku’s memory" style={{ color: C.teal }}>
+          <button className="sr-mem-btn sr-iconbtn" onClick={() => { setTab("memory"); setPanelOpen(true); }} aria-label="Open Miku’s memory" style={{ color: C.teal, marginRight: -8 }}>
             <Icon name="memory" size={20} />
           </button>
         </div>
 
         {/* Thread */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px max(18px, calc((100% - 680px) / 2)) 104px", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px max(18px, calc((100% - 680px) / 2)) calc(104px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column" }}>
           <div style={{ textAlign: "center", margin: "2px 0 16px" }}>
             <span style={{ fontSize: 11, color: C.ink3, background: C.line2, padding: "5px 12px", borderRadius: 99 }}>
               Imported conversation · tap messages to pick what Miku reads
@@ -683,17 +683,17 @@ export default function Home() {
         </div>
 
         {/* Persistent action bar */}
-        <div style={{ position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)", width: "min(92%, 440px)", zIndex: 20 }}>
+        <div style={{ position: "absolute", bottom: "calc(18px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", width: "min(92%, 440px)", zIndex: 20 }}>
           <button
             onClick={analyze}
             disabled={selected.size === 0 || loading}
             aria-label={selected.size > 0 ? `Ask Miku to read ${selected.size} messages` : "Select messages to get a read"}
             style={{
               width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-              padding: selected.size > 0 ? "10px" : "14px 18px", borderRadius: 16,
-              background: selected.size > 0 ? "transparent" : "#fff",
+              padding: "13px 18px", borderRadius: 16,
+              background: selected.size > 0 ? `linear-gradient(135deg, ${C.teal} 0%, ${C.tealDk} 100%)` : "#fff",
               color: selected.size > 0 ? "#fff" : C.ink3,
-              boxShadow: selected.size > 0 ? "none" : "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: selected.size > 0 ? `0 10px 30px ${C.teal}44` : "0 2px 10px rgba(0,0,0,0.06)",
               border: selected.size > 0 ? "none" : `1px solid ${C.line}`,
               cursor: selected.size > 0 && !loading ? "pointer" : "default",
               fontSize: 15, fontWeight: 600, transition: "all 0.18s ease",
@@ -704,16 +704,11 @@ export default function Home() {
                 <span className="spin" style={{ width: 18, height: 18, border: "2.5px solid rgba(0,0,0,0.12)", borderTopColor: C.teal, borderRadius: "50%" }} /> Reading…
               </>
             ) : selected.size > 0 ? (
-              // show Miku image and label when messages are selected
+              // solid CTA pill with a small Miku — no floating white box over the chat
               <>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/miku.png" alt={`Miku, read ${selected.size}`} style={{ width: 78, height: 78, objectFit: "cover", borderRadius: 14, boxShadow: `0 18px 40px ${C.teal}33` }} />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                    <span style={{ fontSize: 17, fontWeight: 700, color: C.teal, lineHeight: 1 }}>Ask Miku</span>
-                    <span style={{ fontSize: 13, color: C.ink3 }}>{selected.size} selected</span>
-                  </div>
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/miku-cutout.png" alt="" style={{ width: 28, height: 28, objectFit: "cover", objectPosition: "center 30%", borderRadius: 8, background: "rgba(255,255,255,0.92)", flexShrink: 0 }} />
+                <span style={{ fontSize: 15, fontWeight: 700 }}>Ask Miku to read {selected.size}</span>
               </>
             ) : (
               <>Select messages to get a read</>

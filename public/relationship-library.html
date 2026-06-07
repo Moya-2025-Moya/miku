@@ -32,6 +32,7 @@
   }
 
   .lib{display:flex;height:100vh;width:100vw}
+  .lib-back{display:none;border:none;width:100%;background:none;font-family:inherit}
 
   /* ===== Sidebar ===== */
   .lib-side{
@@ -616,11 +617,23 @@
   /* ===== Mobile — stack the two panes, no horizontal overflow ===== */
   @media (max-width: 760px){
     .lib{flex-direction:column;height:100dvh;width:100%}
+    /* Single pane: the people list owns the screen; tapping a person swaps to
+       their detail full-screen with a back bar. No more cramped half-height
+       list jammed above the detail. */
     .lib-side{
-      flex:0 0 auto;width:100%;max-height:42vh;
-      border-right:none;border-bottom:1px solid var(--sage-line);
+      flex:1 1 auto;width:100%;max-height:none;min-height:0;
+      border-right:none;
     }
-    .lib-detail{flex:1 1 auto;min-height:0;overflow-x:hidden}
+    .lib-detail{display:none;flex:1 1 auto;min-height:0;overflow-x:hidden}
+    .lib.show-detail .lib-side{display:none}
+    .lib.show-detail .lib-detail{display:flex}
+    .lib.show-detail .lib-back{
+      display:flex;align-items:center;gap:5px;flex-shrink:0;
+      position:relative;z-index:3;
+      padding:13px 15px;border-bottom:1px solid var(--sage-line);
+      background:var(--sage-cream);font-size:14px;font-weight:600;
+      color:var(--sage-teal);cursor:pointer;
+    }
     .p-hdr{padding:16px 16px 12px;gap:12px}
     .p-av{width:46px;height:46px;font-size:18px}
     .p-hdr-info h1{font-size:20px}
@@ -656,7 +669,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8a7d6f" stroke-width="2"/><path d="M20 20l-4-4" stroke="#8a7d6f" stroke-width="2" stroke-linecap="round"/></svg>
       <input id="searchInput" placeholder="Search people&hellip;" oninput="filterContacts(this.value)"/>
     </div>
-    <div class="self-row" id="selfRow" onclick="loadSelf()">
+    <div class="self-row" id="selfRow" onclick="loadSelf(); showDetailMobile()">
       <div class="self-orb">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </div>
@@ -673,6 +686,10 @@
   </aside>
 
   <div class="lib-detail" id="libDetail">
+    <button class="lib-back" onclick="backToList()" aria-label="Back to people">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      People
+    </button>
     <div class="detail-bg"></div>
     <div class="empty-state" id="emptyState">
       <div class="big-icon">&#129504;</div>
@@ -1099,7 +1116,7 @@ function renderSidebar(filter) {
         "</div>" +
       "</div>" +
       '<div class="c-dot"></div>';
-    row.addEventListener("click", function() { loadProfile(p.id); });
+    row.addEventListener("click", function() { loadProfile(p.id); showDetailMobile(); });
     list.appendChild(row);
   });
 }
@@ -1751,8 +1768,12 @@ function addPersonPrompt() {
   };
   persist(pid);
   renderSidebar();
-  loadProfile(pid);
+  loadProfile(pid); showDetailMobile();
 }
+
+/* Mobile single-pane nav: swap the people list for the detail and back again. */
+function showDetailMobile(){ var l=document.querySelector(".lib"); if(l) l.classList.add("show-detail"); }
+function backToList(){ var l=document.querySelector(".lib"); if(l) l.classList.remove("show-detail"); }
 
 /* boot — load the library from the backend, then render */
 (async function() {
@@ -1767,7 +1788,7 @@ function addPersonPrompt() {
   var match = Object.values(profileData).find(function(p) {
     return p.name.toLowerCase() === person.toLowerCase();
   });
-  if (match) loadProfile(match.id);
+  if (match) { loadProfile(match.id); showDetailMobile(); }
 })();
 </script>
 

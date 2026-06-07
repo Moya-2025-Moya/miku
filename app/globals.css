@@ -237,6 +237,34 @@ body {
   .sr-aside-backdrop { display: none !important; }
 }
 
+/* ─── Touch & press feedback — app-wide, incl. inline-styled buttons ──────── */
+
+/* Remove the grey tap-flash + 300ms double-tap delay on every control. */
+button, a, [role="button"], input, textarea, select, label {
+  -webkit-tap-highlight-color: transparent;
+}
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* Tactile press — the only feedback touch gets, since :hover never fires.
+   Low specificity (element selector) so existing class/inline transitions win. */
+button { transition: transform 0.1s ease; }
+button:active { transform: scale(0.97); }
+.sr-convo:active { transform: none; background: rgba(15,118,110,0.12); }
+
+/* Keyboard focus ring only — no ring on mouse/touch press. */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  /* iOS auto-zooms any focused input under 16px — pin controls to 16px on phones. */
+  input, textarea, select { font-size: 16px !important; }
+  /* Roomier tap targets for the compact icon controls. */
+  .sr-tab    { padding-top: 14px; padding-bottom: 14px; }
+  .msg-dots  { width: 34px; height: 34px; }
+}
+
 /* ─── Scrollbar ───────────────────────────────────────────────────────────── */
 
 ::-webkit-scrollbar       { width: 5px; }

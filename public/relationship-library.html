@@ -604,6 +604,15 @@
   .arch-share-btn:hover{background:rgba(255,255,255,.28)}
   .arch-brand{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.4px}
 
+  /* ===== Touch & press feedback ===== */
+  button, a, input, textarea, label { -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; transition: transform .1s ease; }
+  button:active { transform: scale(.96); }
+  .contact-row:active, .self-row:active { background: rgba(15,118,110,.07); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--sage-teal); outline-offset: 2px;
+  }
+
   /* ===== Mobile — stack the two panes, no horizontal overflow ===== */
   @media (max-width: 760px){
     .lib{flex-direction:column;height:100dvh;width:100%}
@@ -618,6 +627,17 @@
     .self-content{padding:16px 16px}
     .self-hdr{padding:16px 16px}
     .empty-state{padding:24px 20px}
+
+    /* Touch ergonomics: 16px inputs (no iOS zoom) + 44px+ tap targets */
+    input, textarea { font-size: 16px; }
+    .tab { padding-top: 14px; padding-bottom: 14px; }
+    .foot-input { padding: 7px 7px 7px 16px; }
+    .foot-input input { font-size: 16px; }
+    .foot-input button { width: 44px; height: 44px; }
+    .foot-gear { width: 42px; height: 42px; font-size: 17px; }
+    .add-btn, .self-gen-btn, .archetype-btn, .key-save, .arch-share-btn { min-height: 46px; }
+    .add-tag-btn { min-height: 36px; padding: 7px 13px; }
+    .arc-del { width: 40px; height: 40px; }
   }
 </style>
 </head>

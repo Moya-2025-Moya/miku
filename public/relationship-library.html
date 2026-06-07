@@ -603,6 +603,22 @@
   }
   .arch-share-btn:hover{background:rgba(255,255,255,.28)}
   .arch-brand{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.4px}
+
+  /* ===== Mobile — stack the two panes, no horizontal overflow ===== */
+  @media (max-width: 760px){
+    .lib{flex-direction:column;height:100dvh;width:100%}
+    .lib-side{
+      flex:0 0 auto;width:100%;max-height:42vh;
+      border-right:none;border-bottom:1px solid var(--sage-line);
+    }
+    .lib-detail{flex:1 1 auto;min-height:0;overflow-x:hidden}
+    .p-hdr{padding:16px 16px 12px;gap:12px}
+    .p-av{width:46px;height:46px;font-size:18px}
+    .p-hdr-info h1{font-size:20px}
+    .self-content{padding:16px 16px}
+    .self-hdr{padding:16px 16px}
+    .empty-state{padding:24px 20px}
+  }
 </style>
 </head>
 <body>
